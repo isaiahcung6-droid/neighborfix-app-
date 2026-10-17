@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>NeighborFix</title>
   <!-- Stripe JS SDK -->
   <script src="https://js.stripe.com/v3/"></script>
@@ -10,19 +10,20 @@
     * {
       box-sizing: border-box;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
     }
     body {
       margin: 0;
       padding: 0;
       background-color: #f4f6f8;
       color: #2c3e50;
-      padding-bottom: 80px;
+      padding-bottom: 100px;
     }
 
-    /* Top Navigation Header */
+    /* App Header */
     header {
       background-color: #ffffff;
-      padding: 16px 20px;
+      padding: 14px 18px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -69,28 +70,34 @@
       padding: 4px 16px;
       border: 1px solid #e5e7eb;
       margin-bottom: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
     .search-box input {
       width: 100%;
       border: none;
-      padding: 12px 0;
+      padding: 10px 0;
       font-size: 15px;
       outline: none;
       color: #374151;
+      background: transparent;
     }
 
-    /* Category Horizontal Scroll Pills */
+    /* Fixed Category Scroll Pills */
+    .categories-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      margin-bottom: 16px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .categories-wrapper::-webkit-scrollbar {
+      display: none;
+    }
     .categories-scroll {
       display: flex;
       gap: 10px;
-      overflow-x: auto;
-      padding-bottom: 12px;
-      margin-bottom: 16px;
-      scrollbar-width: none;
-    }
-    .categories-scroll::-webkit-scrollbar {
-      display: none;
+      padding: 2px 0;
+      width: max-content;
     }
     .category-pill {
       background: #ffffff;
@@ -102,6 +109,7 @@
       white-space: nowrap;
       cursor: pointer;
       color: #374151;
+      flex-shrink: 0;
     }
     .category-pill.active {
       background: #10b981;
@@ -109,12 +117,12 @@
       border-color: #10b981;
     }
 
-    /* Section Header */
+    /* Section Title */
     .section-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .section-title {
       font-size: 18px;
@@ -132,7 +140,7 @@
       background: #ffffff;
       border-radius: 16px;
       padding: 16px;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.04);
       border: 1px solid #f3f4f6;
     }
@@ -189,11 +197,11 @@
       line-height: 1.4;
     }
 
-    /* Floating Add (+) Button */
+    /* Floating (+) Button */
     .fab-btn {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
+      bottom: 28px;
+      right: 20px;
       width: 56px;
       height: 56px;
       background-color: #10b981;
@@ -204,13 +212,13 @@
       align-items: center;
       font-size: 32px;
       font-weight: 300;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
       cursor: pointer;
       border: none;
       z-index: 999;
     }
 
-    /* Registration Form Card */
+    /* Form Section */
     .form-card {
       background: #ffffff;
       padding: 24px;
@@ -272,7 +280,7 @@
 </head>
 <body>
 
-  <!-- Top Header with Logo -->
+  <!-- Top Header -->
   <header>
     <a href="#" class="logo" onclick="showHomeView()">NeighborFix</a>
     <button class="top-reg-btn" id="nav-toggle-btn" onclick="toggleView()">Register Provider</button>
@@ -280,7 +288,7 @@
 
   <div class="container">
 
-    <!-- HOME PAGE VIEW (Green Theme & Original Design) -->
+    <!-- HOME PAGE VIEW -->
     <div id="home-view" class="view-section">
 
       <!-- Search Input -->
@@ -288,12 +296,14 @@
         <input type="text" id="search-input" placeholder="Search plumbers, electricians, cleaners..." onkeyup="filterProviders()">
       </div>
 
-      <!-- Category Pills -->
-      <div class="categories-scroll">
-        <div class="category-pill active">All Services</div>
-        <div class="category-pill">အိမ်ပြင်ပြင်ရေး</div>
-        <div class="category-pill">မီး / Heater / A/C</div>
-        <div class="category-pill">ရေပိုက်</div>
+      <!-- Category Pills Container -->
+      <div class="categories-wrapper">
+        <div class="categories-scroll">
+          <div class="category-pill active">All Services</div>
+          <div class="category-pill">အိမ်ပြင်ပြင်ရေး</div>
+          <div class="category-pill">မီး / Heater / A/C</div>
+          <div class="category-pill">ရေပိုက်</div>
+        </div>
       </div>
 
       <!-- Section Title -->
