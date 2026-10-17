@@ -1,434 +1,143 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeighborFix - Local Services Marketplace</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NeighborFix - VIP Subscription ($10/month)</title>
+  <!-- Stripe JS SDK v3 -->
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .payment-container {
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 420px;
+    }
+    h2 {
+      margin-top: 0;
+      color: #1a1f36;
+      font-size: 22px;
+    }
+    .price-tag {
+      font-size: 20px;
+      font-weight: bold;
+      color: #635bff;
+      margin: 12px 0 20px;
+    }
+    .form-row {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+    }
+    #card-element {
+      background: #f8f9fa;
+      padding: 12px;
+      border: 1px solid #e3e8ee;
+      border-radius: 6px;
+    }
+    #submit-btn {
+      width: 100%;
+      background-color: #635bff;
+      color: #ffffff;
+      border: none;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    #submit-btn:hover {
+      background-color: #4b45c6;
+    }
+    #payment-message {
+      margin-top: 14px;
+      font-size: 14px;
+      text-align: center;
+    }
+  </style>
 </head>
-<body class="bg-slate-50 text-slate-800 pb-28">
+<body>
 
-    <!-- Header -->
-    <header class="bg-white border-b border-slate-100 sticky top-0 z-40 px-4 py-3 flex items-center justify-between shadow-sm">
-        <div class="flex items-center space-x-2">
-            <div class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md shadow-emerald-200">
-                <i class="fa-solid fa-hands-helping"></i>
-            </div>
-            <div>
-                <h1 class="font-bold text-lg leading-tight text-slate-900">NeighborFix</h1>
-                <p class="text-xs text-slate-500" data-i18n="subtitle">Local Services Marketplace</p>
-            </div>
-        </div>
+  <div class="payment-container">
+    <h2>NeighborFix VIP Listing</h2>
+    <p>Get featured on top of local search results for service providers.</p>
+    <div class="price-tag">$10.00 / month</div>
 
-        <!-- Language Switcher -->
-        <div class="relative">
-            <select id="langSwitch" onchange="changeLanguage(this.value)" class="bg-slate-100 border border-slate-200 text-slate-700 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium">
-                <option value="en">English</option>
-                <option value="my">မြန်မာ</option>
-                <option value="es">Español</option>
-                <option value="hi">हिन्दी</option>
-            </select>
-        </div>
-    </header>
+    <form id="payment-form">
+      <div class="form-row">
+        <label for="cardholder-name">Provider Name / Business Name</label>
+        <input type="text" id="cardholder-name" required placeholder="ဥပမာ - Isaiah Cung" style="width: 100%; padding: 10px; border: 1px solid #e3e8ee; border-radius: 6px; box-sizing: border-box;">
+      </div>
 
-    <!-- Main Content -->
-    <main class="max-w-md mx-auto px-4 mt-5">
+      <div class="form-row">
+        <label for="card-element">Credit or Debit Card</label>
+        <div id="card-element"></div>
+      </div>
+
+      <button id="submit-btn" type="submit">Pay $10.00 & Activate VIP</button>
+      <div id="payment-message"></div>
+    </form>
+  </div>
+
+  <script>
+    // တကယ့် Live အသုံးပြုရန် Stripe Dashboard (Developers > API keys) မှ pk_live_... ကို ဤနေရာတွင် ထည့်ပါ
+    const STRIPE_PUBLISHABLE_KEY = "pk_live_YOUR_ACTUAL_LIVE_KEY_HERE"; 
+
+    const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+    const elements = stripe.elements();
+    const cardElement = elements.create('card');
+    cardElement.mount('#card-element');
+
+    const form = document.getElementById('payment-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const paymentMessage = document.getElementById('payment-message');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Processing...";
+      paymentMessage.innerText = "";
+
+      const cardholderName = document.getElementById('cardholder-name').value;
+
+      // Stripe ထံသို့ Card အချက်အလက်ပို့ပြီး Token တောင်းခံခြင်း
+      const { token, error } = await stripe.createToken(cardElement, {
+        name: cardholderName,
+      });
+
+      if (error) {
+        paymentMessage.style.color = "#fa755a";
+        paymentMessage.innerText = error.message;
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Pay $10.00 & Activate VIP";
+      } else {
+        // ငွေပေးချေမှု အောင်မြင်ပါက Token ရလာမည်ဖြစ်ပြီး ၎င်းကို Backend သို့ ပို့ပေးရပါမည်
+        paymentMessage.style.color = "#28a745";
+        paymentMessage.innerText = "Payment Successful! VIP Activated.";
+        console.log("Stripe Token Generated:", token.id);
         
-        <!-- GPS Status Banner -->
-        <div id="gpsStatus" class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 mb-4 flex items-center justify-between text-xs text-emerald-800 shadow-sm">
-            <div class="flex items-center space-x-2">
-                <i class="fa-solid fa-location-dot text-emerald-600 text-sm"></i>
-                <span id="gpsText">Finding your GPS location...</span>
-            </div>
-            <button onclick="getUserLocation()" class="bg-emerald-600 text-white font-bold px-2.5 py-1 rounded-lg text-[10px] hover:bg-emerald-700">Refresh GPS</button>
-        </div>
+        // ဤနေရာတွင် Database သို့မဟုတ် Backend သို့ Token ပို့ကာ VIP Status အသက်သွင်းသည့် လုပ်ဆောင်ချက်များကို ထည့်သွင်းနိုင်ပါသည်
+        submitBtn.innerText = "Success!";
+      }
+    });
+  </script>
 
-        <!-- Search Bar -->
-        <div class="relative mb-5">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
-                <i class="fa-solid fa-magnifying-glass"></i>
-            </span>
-            <input type="text" id="searchInput" onkeyup="filterProviders()" placeholder="Search plumbers, electricians, cleaners..." data-i18n-placeholder="search_placeholder" class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm">
-        </div>
-
-        <!-- Categories Options -->
-        <div class="flex space-x-2 overflow-x-auto pb-2 mb-5 no-scrollbar">
-            <button onclick="filterCat(event, 'all')" class="cat-btn active bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm shadow-emerald-200 transition" data-i18n="cat_all">All Services</button>
-            <button onclick="filterCat(event, 'home_repair')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_home_repair">Home Repair</button>
-            <button onclick="filterCat(event, 'hvac')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_hvac">Electrical / Heater / A/C</button>
-            <button onclick="filterCat(event, 'plumbing')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_plumbing">Plumbing</button>
-            <button onclick="filterCat(event, 'cleaning')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_cleaning">Cleaning</button>
-            <button onclick="filterCat(event, 'towing')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_towing">Towing Service</button>
-        </div>
-
-        <!-- Providers List Header -->
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="font-bold text-slate-900 text-base" data-i18n="verified_title">Verified Nearby Providers</h2>
-            <span class="text-xs text-slate-500 font-medium" id="providerCount">0 providers</span>
-        </div>
-
-        <!-- Provider Cards Container -->
-        <div id="providerList" class="space-y-4"></div>
-
-        <!-- Studio Branding Footer -->
-        <div class="mt-8 mb-4 text-center border-t border-slate-200/60 pt-5">
-            <p class="text-xs text-slate-400 font-medium">Powered & Media Supported by</p>
-            <p class="text-xs font-bold text-emerald-700 mt-0.5 tracking-wide">
-                <i class="fa-solid fa-compact-disc mr-1 text-emerald-600"></i> Rising Star Music Studio
-            </p>
-        </div>
-
-    </main>
-
-    <!-- Bottom Navigation Bar -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 py-2 px-6 flex justify-around items-center z-40 shadow-lg">
-        <button onclick="window.scrollTo({top:0, behavior:'smooth'})" class="flex flex-col items-center text-emerald-600">
-            <i class="fa-solid fa-house text-lg"></i>
-            <span class="text-[10px] font-semibold mt-1" data-i18n="nav_home">Home</span>
-        </button>
-        <button onclick="openPostModal()" class="w-12 h-12 bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-200 -mt-5 border-4 border-white active:scale-95 transition">
-            <i class="fa-solid fa-plus text-lg"></i>
-        </button>
-        <button onclick="alert('Saved Services')" class="flex flex-col items-center text-slate-400 hover:text-slate-600">
-            <i class="fa-solid fa-bookmark text-lg"></i>
-            <span class="text-[10px] font-medium mt-1" data-i18n="nav_saved">Saved</span>
-        </button>
-    </nav>
-
-    <!-- Post Service Modal (With Fee & GPS Options) -->
-    <div id="postModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
-                <h3 class="font-bold text-slate-900 text-base">Post Your Service Listing</h3>
-                <button onclick="closePostModal()" class="text-slate-400 hover:text-slate-600 text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            
-            <form id="providerForm" onsubmit="saveProvider(event)" class="space-y-3">
-                <!-- Membership Plan Selection -->
-                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-2">
-                    <label class="block text-xs font-bold text-amber-900 mb-1">Select Promotion Plan</label>
-                    <div class="grid grid-cols-2 gap-2 mt-2">
-                        <label class="cursor-pointer border border-slate-200 rounded-xl p-2.5 bg-white text-center flex flex-col items-center justify-center hover:border-emerald-500">
-                            <input type="radio" name="plan" value="free" checked class="mb-1 text-emerald-600">
-                            <span class="text-xs font-bold text-slate-800">Basic (Free)</span>
-                            <span class="text-[10px] text-slate-500">$0 / Standard Listing</span>
-                        </label>
-                        <label class="cursor-pointer border-2 border-amber-400 rounded-xl p-2.5 bg-amber-100/50 text-center flex flex-col items-center justify-center shadow-sm">
-                            <input type="radio" name="plan" value="vip" class="mb-1 text-amber-600">
-                            <span class="text-xs font-bold text-amber-800"><i class="fa-solid fa-crown text-amber-500 mr-1"></i> VIP Featured</span>
-                            <span class="text-[10px] font-semibold text-amber-700">$10 / Month Top Rank</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Your Name / Business Name</label>
-                    <input type="text" id="pName" required class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Category</label>
-                    <select id="pCategory" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                        <option value="home_repair">Home Repair</option>
-                        <option value="hvac">Electrical / Heater / A/C</option>
-                        <option value="plumbing">Plumbing</option>
-                        <option value="cleaning">Cleaning</option>
-                        <option value="towing">Towing Service</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Service Title (e.g. Pipe & Leak Repair)</label>
-                    <input type="text" id="pTitle" required class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                </div>
-                <div class="flex space-x-2">
-                    <div class="w-1/2">
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Rate (e.g. $35/hr)</label>
-                        <input type="text" id="pRate" required placeholder="$30/hr" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                    </div>
-                    <div class="w-1/2">
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Phone / WhatsApp</label>
-                        <input type="text" id="pPhone" required placeholder="+1..." class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                    </div>
-                </div>
-
-                <!-- GPS Location Capture Button -->
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">GPS Location Pin</label>
-                    <button type="button" onclick="capturePostLocation()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs border border-slate-300 flex items-center justify-center space-x-1.5">
-                        <i class="fa-solid fa-crosshairs text-emerald-600"></i>
-                        <span id="gpsPostBtnText">Use My Current GPS Location</span>
-                    </button>
-                    <input type="hidden" id="pLat">
-                    <input type="hidden" id="pLng">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Short Description</label>
-                    <textarea id="pDesc" rows="2" required class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
-                </div>
-                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow mt-2">Publish Listing</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Map View Modal -->
-    <div id="mapModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl p-4 shadow-2xl">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
-                <h3 id="mapTitle" class="font-bold text-slate-900 text-sm">Provider Location</h3>
-                <button onclick="closeMapModal()" class="text-slate-400 hover:text-slate-600 text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="w-full h-64 bg-slate-100 rounded-xl overflow-hidden mb-3">
-                <iframe id="googleMapIframe" class="w-full h-full border-0" loading="lazy" allowfullscreen src=""></iframe>
-            </div>
-            <a id="getDirectionBtn" href="#" target="_blank" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-2 shadow hover:bg-emerald-700">
-                <i class="fa-solid fa-diamond-turn-right"></i>
-                <span>Get Directions in Google Maps</span>
-            </a>
-        </div>
-    </div>
-
-    <!-- Live Chat Modal -->
-    <div id="chatModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-3">
-                <h3 id="chatTitle" class="font-bold text-slate-900 text-sm">Direct Chat</h3>
-                <button onclick="closeChat()" class="text-slate-400 hover:text-slate-600 text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div id="chatMessages" class="h-52 overflow-y-auto bg-slate-50 rounded-xl p-3 mb-3 space-y-2 text-xs">
-                <div class="bg-white p-2.5 rounded-xl shadow-sm max-w-[80%] text-slate-600">Hello! Thanks for reaching out. How can I help you today?</div>
-            </div>
-            <div class="flex space-x-2">
-                <input type="text" id="chatInput" placeholder="Type a message..." class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                <button onclick="sendMessage()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow hover:bg-emerald-700"><i class="fa-solid fa-paper-plane"></i></button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Script Logic with Google Maps & Live GPS -->
-    <script>
-        let currentLang = 'en';
-        let userLat = null;
-        let userLng = null;
-
-        // Default Data with Lat/Lng included
-        let providers = JSON.parse(localStorage.getItem('nf_providers')) || [
-            { id: 1, name: "Carlos Rodriguez", category: "plumbing", title: "Plumbing & Pipe Repair", rate: "$35/hr", lat: 39.6137, lng: -86.1064, rating: "4.9", phone: "1234567890", desc: "Experienced local plumber available for quick emergency fixes, pipe replacements, and drain cleaning.", isVip: true, img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" },
-            { id: 2, name: "Daw Khin Aye", category: "cleaning", title: "Home & Deep Cleaning", rate: "$25/hr", lat: 39.6237, lng: -86.1164, rating: "5.0", phone: "1234567891", desc: "Friendly house cleaning services, kitchen & bathroom deep cleans with eco-friendly products.", isVip: false, img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80" },
-            { id: 3, name: "John Smith", category: "hvac", title: "Electrical, Heater & A/C", rate: "$45/hr", lat: 39.6337, lng: -86.0964, rating: "4.8", phone: "1234567892", desc: "Professional HVAC technician for heater maintenance, A/C installation, and electrical wiring fixes.", isVip: true, img: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&q=80" },
-            { id: 4, name: "Mike Miller", category: "towing", title: "24/7 Towing & Auto Recovery", rate: "$60/flat", lat: 39.6037, lng: -86.1264, rating: "4.9", phone: "1234567893", desc: "Fast emergency towing service, roadside assistance, battery jump-start, and vehicle recovery.", isVip: false, img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" }
-        ];
-
-        // Haversine Formula for Distance Calculation (Miles)
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            if (!lat1 || !lon1 || !lat2 || !lon2) return "0.8 mi";
-            const R = 3958.8; // Radius of Earth in Miles
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            const d = R * c;
-            return d.toFixed(1) + " mi";
-        }
-
-        function getUserLocation() {
-            const gpsText = document.getElementById('gpsText');
-            if (navigator.geolocation) {
-                gpsText.innerText = "Accessing GPS location...";
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        userLat = position.coords.latitude;
-                        userLng = position.coords.longitude;
-                        gpsText.innerText = `GPS Active: (${userLat.toFixed(2)}, ${userLng.toFixed(2)})`;
-                        renderProviders();
-                    },
-                    (error) => {
-                        gpsText.innerText = "GPS Disabled / Using default location.";
-                    }
-                );
-            } else {
-                gpsText.innerText = "Geolocation not supported by browser.";
-            }
-        }
-
-        function renderProviders(list = providers) {
-            const container = document.getElementById('providerList');
-            document.getElementById('providerCount').innerText = `${list.length} providers`;
-            
-            if(!list || list.length === 0) {
-                container.innerHTML = '<p class="text-xs text-center text-slate-400 py-6">No providers found in this category.</p>';
-                return;
-            }
-
-            // Sort VIP listings to top
-            const sortedList = [...list].sort((a, b) => (b.isVip ? 1 : 0) - (a.isVip ? 1 : 0));
-            const chatText = translations[currentLang] && translations[currentLang]['direct_chat'] ? translations[currentLang]['direct_chat'] : 'Direct Chat';
-
-            container.innerHTML = sortedList.map(p => {
-                const distanceStr = (userLat && userLng) ? calculateDistance(userLat, userLng, p.lat, p.lng) : "0.8 mi";
-                return `
-                <div class="provider-card bg-white border ${p.isVip ? 'border-amber-300 ring-1 ring-amber-200' : 'border-slate-100'} rounded-2xl p-4 shadow-sm relative">
-                    ${p.isVip ? '<span class="absolute -top-2.5 right-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-sm"><i class="fa-solid fa-crown mr-1"></i> VIP Featured</span>' : ''}
-                    <div class="flex items-start justify-between">
-                        <div class="flex space-x-3">
-                            <img src="${p.img}" alt="${p.name}" class="w-14 h-14 rounded-2xl object-cover shadow-sm">
-                            <div>
-                                <h3 class="font-bold text-slate-900">${p.name}</h3>
-                                <p class="text-xs text-emerald-600 font-semibold mt-0.5">${p.title}</p>
-                                <div class="flex items-center space-x-2 mt-1.5 text-xs text-slate-500">
-                                    <span class="text-amber-500 font-bold flex items-center"><i class="fa-solid fa-star mr-1"></i> ${p.rating}</span>
-                                    <span>•</span>
-                                    <button onclick="openMapModal('${p.name}', ${p.lat}, ${p.lng})" class="text-slate-600 hover:text-emerald-600 font-medium underline flex items-center">
-                                        <i class="fa-solid fa-location-dot text-emerald-600 mr-1"></i> ${distanceStr} (View Map)
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <span class="bg-emerald-50 text-emerald-700 font-bold text-xs px-2.5 py-1 rounded-lg">${p.rate}</span>
-                    </div>
-                    <p class="text-xs text-slate-600 mt-3 leading-relaxed">${p.desc}</p>
-                    <div class="flex space-x-2 mt-4">
-                        <button onclick="openChat('${p.name}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 shadow-sm shadow-emerald-100">
-                            <i class="fa-regular fa-comment-dots"></i>
-                            <span>${chatText}</span>
-                        </button>
-                        <a href="tel:${p.phone}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center justify-center">
-                            <i class="fa-solid fa-phone"></i>
-                        </a>
-                    </div>
-                </div>
-            `}).join('');
-        }
-
-        function openMapModal(name, lat, lng) {
-            document.getElementById('mapTitle').innerText = name + " Location Map";
-            const mapUrl = `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
-            document.getElementById('googleMapIframe').src = mapUrl;
-            document.getElementById('getDirectionBtn').href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-            document.getElementById('mapModal').classList.remove('hidden');
-        }
-
-        function closeMapModal() {
-            document.getElementById('mapModal').classList.add('hidden');
-        }
-
-        function capturePostLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition((pos) => {
-                    document.getElementById('pLat').value = pos.coords.latitude;
-                    document.getElementById('pLng').value = pos.coords.longitude;
-                    document.getElementById('gpsPostBtnText').innerText = "GPS Location Captured ✓";
-                });
-            }
-        }
-
-        function saveProvider(e) {
-            e.preventDefault();
-            const selectedPlan = document.querySelector('input[name="plan"]:checked').value;
-            const isVip = selectedPlan === 'vip';
-
-            const newP = {
-                id: Date.now(),
-                name: document.getElementById('pName').value,
-                category: document.getElementById('pCategory').value,
-                title: document.getElementById('pTitle').value,
-                rate: document.getElementById('pRate').value,
-                phone: document.getElementById('pPhone').value,
-                desc: document.getElementById('pDesc').value,
-                isVip: isVip,
-                lat: parseFloat(document.getElementById('pLat').value) || 39.6137,
-                lng: parseFloat(document.getElementById('pLng').value) || -86.1064,
-                rating: "5.0",
-                img: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"
-            };
-            
-            providers.unshift(newP);
-            localStorage.setItem('nf_providers', JSON.stringify(providers));
-            renderProviders();
-            closePostModal();
-
-            if(isVip) {
-                alert("Thank you for choosing VIP Plan ($10/month)! Your post is now featured at the top.");
-            } else {
-                alert("Your free listing has been posted successfully!");
-            }
-        }
-
-        function filterCat(e, cat) {
-            document.querySelectorAll('.cat-btn').forEach(btn => {
-                btn.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
-                btn.classList.add('bg-white', 'border', 'border-slate-200', 'text-slate-600');
-            });
-            e.target.classList.remove('bg-white', 'border', 'border-slate-200', 'text-slate-600');
-            e.target.classList.add('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
-
-            if(cat === 'all') {
-                renderProviders(providers);
-            } else {
-                renderProviders(providers.filter(p => p.category === cat));
-            }
-        }
-
-        function filterProviders() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            renderProviders(providers.filter(p => 
-                p.name.toLowerCase().includes(query) || p.title.toLowerCase().includes(query)
-            ));
-        }
-
-        function openChat(name) {
-            document.getElementById('chatTitle').innerText = "Chat with " + name;
-            document.getElementById('chatModal').classList.remove('hidden');
-        }
-
-        function closeChat() {
-            document.getElementById('chatModal').classList.add('hidden');
-        }
-
-        function sendMessage() {
-            const input = document.getElementById('chatInput');
-            if(!input.value.trim()) return;
-            
-            const msgBox = document.getElementById('chatMessages');
-            msgBox.innerHTML += `<div class="bg-emerald-600 text-white p-2.5 rounded-xl shadow-sm max-w-[80%] ml-auto text-xs">${input.value}</div>`;
-            input.value = '';
-            msgBox.scrollTop = msgBox.scrollHeight;
-        }
-
-        function openPostModal() { document.getElementById('postModal').classList.remove('hidden'); }
-        function closePostModal() { document.getElementById('postModal').classList.add('hidden'); }
-
-        const translations = {
-            en: { subtitle: "Local Services Marketplace", search_placeholder: "Search plumbers, electricians, cleaners...", cat_all: "All Services", cat_home_repair: "Home Repair", cat_hvac: "Electrical / Heater / A/C", cat_plumbing: "Plumbing", cat_cleaning: "Cleaning", cat_towing: "Towing Service", verified_title: "Verified Nearby Providers", direct_chat: "Direct Chat", nav_home: "Home", nav_saved: "Saved" },
-            my: { subtitle: "ဒေသတွင်း ဝန်ဆောင်မှု ဈေးကွက်", search_placeholder: "ပိုက်ပြင်၊ မီးပြင်၊ သန့်ရှင်းရေး ရှာရန်...", cat_all: "ဝန်ဆောင်မှု အားလုံး", cat_home_repair: "အိမ်ပြုပြင်ရေး", cat_hvac: "မီး / Heater / A/C", cat_plumbing: "ရေပိုက်", cat_cleaning: "သန့်ရှင်းရေး", cat_towing: "ကားပျက်ဆွဲ", verified_title: "အနီးအနားရှိ အတည်ပြုပြီး ဝန်ဆောင်မှုပေးသူများ", direct_chat: "တိုက်ရိုက် စကားပြောရန်", nav_home: "ပင်မ", nav_saved: "သိမ်းဆည်းရန်" },
-            es: { subtitle: "Mercado de Servicios Locales", search_placeholder: "Buscar gasfiteros, limpiadores...", cat_all: "Todos los Servicios", cat_home_repair: "Reparación de Casa", cat_hvac: "Electricidad / Calefacción / A/C", cat_plumbing: "Fontanería", cat_cleaning: "Limpieza", cat_towing: "Servicio de Remolque", verified_title: "Proveedores Verificados Cercanos", direct_chat: "Chat Directo", nav_home: "Inicio", nav_saved: "Guardados" },
-            hi: { subtitle: "स्थानीय सेवा बाज़ार (Local Services)", search_placeholder: "प्लंबर, इलेक्ट्रीशियन, क्लीनर खोजें...", cat_all: "सभी सेवाएं", cat_home_repair: "घर की मरम्मत", cat_hvac: "बिजली / हीटर / एसी", cat_plumbing: "प्लंबिंग", cat_cleaning: "सफाई सेवा", cat_towing: "टोइंग", verified_title: "सत्यापित नजदीकी सेवा प्रदाता", direct_chat: "सीधा चैट करें", nav_home: "होम", nav_saved: "सहेजे गए" }
-        };
-
-        function changeLanguage(lang) {
-            currentLang = lang;
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (translations[lang] && translations[lang][key]) el.innerText = translations[lang][key];
-            });
-            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-                const key = el.getAttribute('data-i18n-placeholder');
-                if (translations[lang] && translations[lang][key]) el.placeholder = translations[lang][key];
-            });
-            renderProviders();
-        }
-
-        document.addEventListener('DOMContentLoaded', () => { 
-            getUserLocation();
-            renderProviders(); 
-        });
-    </script>
 </body>
 </html>
