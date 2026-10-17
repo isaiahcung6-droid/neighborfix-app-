@@ -64,11 +64,15 @@
             <input type="text" id="searchInput" onkeyup="filterProviders()" placeholder="Search plumbers, electricians, cleaners..." data-i18n-placeholder="search_placeholder" class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm">
         </div>
 
-        <!-- Categories Filter -->
+        <!-- Categories Options (Separated as requested) -->
         <div class="flex space-x-2 overflow-x-auto pb-2 mb-5 no-scrollbar">
-            <button onclick="filterCat('all')" class="cat-btn active bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap shadow-sm shadow-emerald-200 transition">All Services</button>
-            <button onclick="filterCat('repair')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap shadow-sm hover:bg-slate-50 transition">Home Repair</button>
-            <button onclick="filterCat('cleaning')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap shadow-sm hover:bg-slate-50 transition">Cleaning & Yard</button>
+            <button onclick="filterCat('all')" class="cat-btn active bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm shadow-emerald-200 transition" data-i18n="cat_all">All Services</button>
+            <button onclick="filterCat('home_repair')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_home_repair">အိမ်ပြုပြင်ရေး</button>
+            <button onclick="filterCat('hvac')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_hvac">မီး / Heater / A/C</button>
+            <button onclick="filterCat('plumbing')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_plumbing">ရေပိုက်</button>
+            <button onclick="filterCat('cleaning')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_cleaning">သန့်ရှင်းရေး</button>
+            <button onclick="filterCat('moving')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_moving">ရွှေ့ပြောင်းရေး</button>
+            <button onclick="filterCat('towing')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_towing">ကားပျက်ဆွဲ</button>
         </div>
 
         <!-- Providers List Header -->
@@ -80,14 +84,14 @@
         <!-- Provider Cards Container -->
         <div id="providerList" class="space-y-4">
             
-            <!-- Card 1 -->
-            <div class="provider-card bg-white border border-slate-100 rounded-2xl p-4 shadow-sm" data-category="repair" data-name="Carlos Rodriguez plumbing leak repair">
+            <!-- Card 1: Plumbing -->
+            <div class="provider-card bg-white border border-slate-100 rounded-2xl p-4 shadow-sm" data-category="plumbing" data-name="Carlos Rodriguez plumbing leak repair">
                 <div class="flex items-start justify-between">
                     <div class="flex space-x-3">
                         <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Carlos" class="w-14 h-14 rounded-2xl object-cover shadow-sm">
                         <div>
                             <h3 class="font-bold text-slate-900">Carlos Rodriguez</h3>
-                            <p class="text-xs text-emerald-600 font-semibold mt-0.5">Plumbing & Leak Repair</p>
+                            <p class="text-xs text-emerald-600 font-semibold mt-0.5">Plumbing & Pipe Repair</p>
                             <div class="flex items-center space-x-2 mt-1.5 text-xs text-slate-500">
                                 <span class="text-amber-500 font-bold flex items-center"><i class="fa-solid fa-star mr-1"></i> 4.9</span>
                                 <span>(38)</span>
@@ -105,7 +109,7 @@
                 </button>
             </div>
 
-            <!-- Card 2 -->
+            <!-- Card 2: Cleaning -->
             <div class="provider-card bg-white border border-slate-100 rounded-2xl p-4 shadow-sm" data-category="cleaning" data-name="Daw Khin Aye home deep cleaning">
                 <div class="flex items-start justify-between">
                     <div class="flex space-x-3">
@@ -125,6 +129,56 @@
                 </div>
                 <p class="text-xs text-slate-600 mt-3 leading-relaxed">Friendly house cleaning services, kitchen & bathroom deep cleans with eco-friendly products.</p>
                 <button onclick="openChat('Daw Khin Aye')" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center space-x-2 shadow-sm shadow-emerald-100">
+                    <i class="fa-regular fa-comment-dots"></i>
+                    <span data-i18n="direct_chat">Direct Chat</span>
+                </button>
+            </div>
+
+            <!-- Card 3: HVAC / Electrical -->
+            <div class="provider-card bg-white border border-slate-100 rounded-2xl p-4 shadow-sm" data-category="hvac" data-name="John Smith electrician heater ac repair">
+                <div class="flex items-start justify-between">
+                    <div class="flex space-x-3">
+                        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&q=80" alt="John" class="w-14 h-14 rounded-2xl object-cover shadow-sm">
+                        <div>
+                            <h3 class="font-bold text-slate-900">John Smith</h3>
+                            <p class="text-xs text-emerald-600 font-semibold mt-0.5">Electrical, Heater & A/C</p>
+                            <div class="flex items-center space-x-2 mt-1.5 text-xs text-slate-500">
+                                <span class="text-amber-500 font-bold flex items-center"><i class="fa-solid fa-star mr-1"></i> 4.8</span>
+                                <span>(29)</span>
+                                <span>•</span>
+                                <span><i class="fa-solid fa-location-dot text-slate-400 mr-0.5"></i> 2.1 mi</span>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="bg-emerald-50 text-emerald-700 font-bold text-xs px-2.5 py-1 rounded-lg">$45/hr</span>
+                </div>
+                <p class="text-xs text-slate-600 mt-3 leading-relaxed">Professional HVAC technician for heater maintenance, A/C installation, and electrical wiring fixes.</p>
+                <button onclick="openChat('John Smith')" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center space-x-2 shadow-sm shadow-emerald-100">
+                    <i class="fa-regular fa-comment-dots"></i>
+                    <span data-i18n="direct_chat">Direct Chat</span>
+                </button>
+            </div>
+
+            <!-- Card 4: Towing -->
+            <div class="provider-card bg-white border border-slate-100 rounded-2xl p-4 shadow-sm" data-category="towing" data-name="Mike Miller towing auto recovery">
+                <div class="flex items-start justify-between">
+                    <div class="flex space-x-3">
+                        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" alt="Mike" class="w-14 h-14 rounded-2xl object-cover shadow-sm">
+                        <div>
+                            <h3 class="font-bold text-slate-900">Mike Miller</h3>
+                            <p class="text-xs text-emerald-600 font-semibold mt-0.5">24/7 Towing & Auto Recovery</p>
+                            <div class="flex items-center space-x-2 mt-1.5 text-xs text-slate-500">
+                                <span class="text-amber-500 font-bold flex items-center"><i class="fa-solid fa-star mr-1"></i> 4.9</span>
+                                <span>(41)</span>
+                                <span>•</span>
+                                <span><i class="fa-solid fa-location-dot text-slate-400 mr-0.5"></i> 3.5 mi</span>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="bg-emerald-50 text-emerald-700 font-bold text-xs px-2.5 py-1 rounded-lg">$60/flat</span>
+                </div>
+                <p class="text-xs text-slate-600 mt-3 leading-relaxed">Fast emergency towing service, roadside assistance, battery jump-start, and vehicle recovery.</p>
+                <button onclick="openChat('Mike Miller')" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center space-x-2 shadow-sm shadow-emerald-100">
                     <i class="fa-regular fa-comment-dots"></i>
                     <span data-i18n="direct_chat">Direct Chat</span>
                 </button>
@@ -185,6 +239,13 @@
                 pwa_desc: "Install as app for faster access & offline support.",
                 install_btn: "Install",
                 search_placeholder: "Search plumbers, electricians, cleaners...",
+                cat_all: "All Services",
+                cat_home_repair: "Home Repair",
+                cat_hvac: "Heater & A/C",
+                cat_plumbing: "Plumbing",
+                cat_cleaning: "Cleaning",
+                cat_moving: "Moving",
+                cat_towing: "Auto Towing",
                 verified_title: "Verified Nearby Providers",
                 providers_count: "providers",
                 direct_chat: "Direct Chat",
@@ -197,6 +258,13 @@
                 pwa_desc: "အမြန်ဆုံး အသုံးပြုနိုင်ရန် App ကဲ့သို့ တင်ထားပါ။",
                 install_btn: "ထည့်မည်",
                 search_placeholder: "ပိုက်ပြင်၊ မီးပြင်၊ သန့်ရှင်းရေး ရှာရန်...",
+                cat_all: "ဝန်ဆောင်မှု အားလုံး",
+                cat_home_repair: "အိမ်ပြုပြင်ရေး",
+                cat_hvac: "မီး / Heater / A/C",
+                cat_plumbing: "ရေပိုက်",
+                cat_cleaning: "သန့်ရှင်းရေး",
+                cat_moving: "ရွှေ့ပြောင်းရေး",
+                cat_towing: "ကားပျက်ဆွဲ",
                 verified_title: "အနီးအနားရှိ အတည်ပြုပြီး ဝန်ဆောင်မှုပေးသူများ",
                 providers_count: "ဦး",
                 direct_chat: "တိုက်ရိုက် စကားပြောရန်",
@@ -209,6 +277,13 @@
                 pwa_desc: "Instalar como aplicación para acceso rápido.",
                 install_btn: "Instalar",
                 search_placeholder: "Buscar gasfiteros, limpiadores...",
+                cat_all: "Todos",
+                cat_home_repair: "Reparación",
+                cat_hvac: "Calefacción y A/C",
+                cat_plumbing: "Fontanería",
+                cat_cleaning: "Limpieza",
+                cat_moving: "Mudanza",
+                cat_towing: "Remolque",
                 verified_title: "Proveedores Verificados Cercanos",
                 providers_count: "proveedores",
                 direct_chat: "Chat Directo",
@@ -221,6 +296,13 @@
                 pwa_desc: "तेज़ पहुँच और ऑफ़लाइन सहायता के लिए ऐप के रूप में इंस्टॉल करें।",
                 install_btn: "इंस्टॉल करें",
                 search_placeholder: "प्लंबर, इलेक्ट्रीशियन, क्लीनर खोजें...",
+                cat_all: "सभी सेवाएं",
+                cat_home_repair: "गृह मरम्मत",
+                cat_hvac: "हीटर और एसी",
+                cat_plumbing: "प्लंबिंग",
+                cat_cleaning: "सफाई",
+                cat_moving: "स्थानांतरण (Moving)",
+                cat_towing: "टोइंग (Towing)",
                 verified_title: "सत्यापित नजदीकी सेवा प्रदाता",
                 providers_count: "प्रदाता",
                 direct_chat: "सीधा चैट करें (Direct Chat)",
