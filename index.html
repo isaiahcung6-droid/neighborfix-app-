@@ -64,15 +64,15 @@
             <input type="text" id="searchInput" onkeyup="filterProviders()" placeholder="Search plumbers, electricians, cleaners..." data-i18n-placeholder="search_placeholder" class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm">
         </div>
 
-        <!-- Categories Options (Separated as requested) -->
+        <!-- Categories Options (Dynamically Translated) -->
         <div class="flex space-x-2 overflow-x-auto pb-2 mb-5 no-scrollbar">
-            <button onclick="filterCat('all')" class="cat-btn active bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm shadow-emerald-200 transition" data-i18n="cat_all">All Services</button>
-            <button onclick="filterCat('home_repair')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_home_repair">အိမ်ပြုပြင်ရေး</button>
-            <button onclick="filterCat('hvac')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_hvac">မီး / Heater / A/C</button>
-            <button onclick="filterCat('plumbing')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_plumbing">ရေပိုက်</button>
-            <button onclick="filterCat('cleaning')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_cleaning">သန့်ရှင်းရေး</button>
-            <button onclick="filterCat('moving')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_moving">ရွှေ့ပြောင်းရေး</button>
-            <button onclick="filterCat('towing')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_towing">ကားပျက်ဆွဲ</button>
+            <button onclick="filterCat(event, 'all')" class="cat-btn active bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm shadow-emerald-200 transition" data-i18n="cat_all">All Services</button>
+            <button onclick="filterCat(event, 'home_repair')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_home_repair">Home Repair</button>
+            <button onclick="filterCat(event, 'hvac')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_hvac">Electrical / Heater / A/C</button>
+            <button onclick="filterCat(event, 'plumbing')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_plumbing">Plumbing</button>
+            <button onclick="filterCat(event, 'cleaning')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_cleaning">Cleaning</button>
+            <button onclick="filterCat(event, 'moving')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_moving">Moving</button>
+            <button onclick="filterCat(event, 'towing')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_towing">Towing Service</button>
         </div>
 
         <!-- Providers List Header -->
@@ -241,11 +241,11 @@
                 search_placeholder: "Search plumbers, electricians, cleaners...",
                 cat_all: "All Services",
                 cat_home_repair: "Home Repair",
-                cat_hvac: "Heater & A/C",
+                cat_hvac: "Electrical / Heater / A/C",
                 cat_plumbing: "Plumbing",
                 cat_cleaning: "Cleaning",
                 cat_moving: "Moving",
-                cat_towing: "Auto Towing",
+                cat_towing: "Towing Service",
                 verified_title: "Verified Nearby Providers",
                 providers_count: "providers",
                 direct_chat: "Direct Chat",
@@ -277,13 +277,13 @@
                 pwa_desc: "Instalar como aplicación para acceso rápido.",
                 install_btn: "Instalar",
                 search_placeholder: "Buscar gasfiteros, limpiadores...",
-                cat_all: "Todos",
-                cat_home_repair: "Reparación",
-                cat_hvac: "Calefacción y A/C",
-                cat_plumbing: "Fontanería",
+                cat_all: "Todos los Servicios",
+                cat_home_repair: "Reparación de Casa",
+                cat_hvac: "Electricidad / Calefacción / A/C",
+                cat_plumbing: "Fontanería / Tuberías",
                 cat_cleaning: "Limpieza",
                 cat_moving: "Mudanza",
-                cat_towing: "Remolque",
+                cat_towing: "Servicio de Remolque",
                 verified_title: "Proveedores Verificados Cercanos",
                 providers_count: "proveedores",
                 direct_chat: "Chat Directo",
@@ -297,15 +297,15 @@
                 install_btn: "इंस्टॉल करें",
                 search_placeholder: "प्लंबर, इलेक्ट्रीशियन, क्लीनर खोजें...",
                 cat_all: "सभी सेवाएं",
-                cat_home_repair: "गृह मरम्मत",
-                cat_hvac: "हीटर और एसी",
-                cat_plumbing: "प्लंबिंग",
-                cat_cleaning: "सफाई",
-                cat_moving: "स्थानांतरण (Moving)",
-                cat_towing: "टोइंग (Towing)",
+                cat_home_repair: "घर की मरम्मत",
+                cat_hvac: "बिजली / हीटर / एसी",
+                cat_plumbing: "प्लंबिंग (नल-पाइप)",
+                cat_cleaning: "सफाई सेवा",
+                cat_moving: "सामान स्थानांतरण",
+                cat_towing: "टोइंग (गाड़ी खिंचाई)",
                 verified_title: "सत्यापित नजदीकी सेवा प्रदाता",
                 providers_count: "प्रदाता",
-                direct_chat: "सीधा चैट करें (Direct Chat)",
+                direct_chat: "सीधा चैट करें",
                 nav_home: "होम",
                 nav_saved: "सहेजे गए"
             }
@@ -329,13 +329,13 @@
             });
         }
 
-        function filterCat(cat) {
+        function filterCat(e, cat) {
             document.querySelectorAll('.cat-btn').forEach(btn => {
                 btn.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
                 btn.classList.add('bg-white', 'border', 'border-slate-200', 'text-slate-600');
             });
-            event.target.classList.remove('bg-white', 'border', 'border-slate-200', 'text-slate-600');
-            event.target.classList.add('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
+            e.target.classList.remove('bg-white', 'border', 'border-slate-200', 'text-slate-600');
+            e.target.classList.add('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
 
             const cards = document.querySelectorAll('.provider-card');
             cards.forEach(card => {
