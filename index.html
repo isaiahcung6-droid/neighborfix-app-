@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>NeighborFix</title>
-  <!-- Stripe JS SDK -->
-  <script src="https://js.stripe.com/v3/"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -82,7 +80,7 @@
       background: transparent;
     }
 
-    /* Fixed Category Scroll Pills */
+    /* Category Scroll Pills */
     .categories-wrapper {
       width: 100%;
       overflow-x: auto;
@@ -241,25 +239,6 @@
       border-radius: 8px;
       font-size: 15px;
     }
-    .vip-checkbox-card {
-      background: #ecfdf5;
-      border: 1px solid #10b981;
-      border-radius: 10px;
-      padding: 14px;
-      margin: 18px 0;
-    }
-    #stripe-payment-section {
-      display: none;
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px dashed #ccc;
-    }
-    #card-element {
-      background: #f9fafb;
-      padding: 12px;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-    }
     .submit-btn {
       width: 100%;
       background-color: #10b981;
@@ -270,6 +249,7 @@
       font-size: 16px;
       font-weight: 700;
       cursor: pointer;
+      margin-top: 10px;
     }
     #status-message {
       margin-top: 14px;
@@ -364,7 +344,7 @@
 
     </div>
 
-    <!-- REGISTER PROVIDER VIEW -->
+    <!-- REGISTER PROVIDER VIEW (Fee မပါသောပုံစံ) -->
     <div id="register-view" class="view-section hidden">
       <div class="form-card">
         <h2 style="margin-top: 0; font-size: 20px;">Service Provider စာရင်းသွင်းရန်</h2>
@@ -390,26 +370,7 @@
             </select>
           </div>
 
-          <!-- VIP Plan Switch -->
-          <div class="vip-checkbox-card">
-            <label style="cursor: pointer; color: #059669;">
-              <input type="checkbox" id="enable-vip" onchange="toggleVipSection()">
-              <strong>VIP Listing ရယူမည် ($10.00 / လ)</strong>
-            </label>
-            <p style="margin: 4px 0 0 22px; font-size: 12px; color: #4b5563;">
-              ရှာဖွေမှု ရလဒ်များတွင် ထိပ်ဆုံးမှ ပေါ်လွင်စွာ ဖော်ပြပေးမည်ဖြစ်ပါသည်။
-            </p>
-          </div>
-
-          <!-- Stripe Card Section -->
-          <div id="stripe-payment-section">
-            <label style="font-size: 14px; font-weight: 600; display: block; margin-bottom: 6px;">
-              Credit / Debit Card အချက်အလက်ထည့်ပါ
-            </label>
-            <div id="card-element"></div>
-          </div>
-
-          <button type="submit" class="submit-btn" id="submit-btn" style="margin-top: 16px;">Register / စာရင်းသွင်းမည်</button>
+          <button type="submit" class="submit-btn">Register / စာရင်းသွင်းမည်</button>
           <div id="status-message"></div>
         </form>
       </div>
@@ -418,13 +379,6 @@
   </div>
 
   <script>
-    // Stripe Setup
-    const STRIPE_PUBLISHABLE_KEY = "pk_live_YOUR_ACTUAL_LIVE_KEY_HERE";
-    const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
-    const elements = stripe.elements();
-    const cardElement = elements.create('card');
-    cardElement.mount('#card-element');
-
     // Page View Toggle (Home <-> Register)
     function toggleView() {
       const homeView = document.getElementById('home-view');
@@ -448,21 +402,6 @@
       window.scrollTo(0, 0);
     }
 
-    // Toggle Stripe Payment Box
-    function toggleVipSection() {
-      const isVipChecked = document.getElementById('enable-vip').checked;
-      const paymentSection = document.getElementById('stripe-payment-section');
-      const submitBtn = document.getElementById('submit-btn');
-
-      if (isVipChecked) {
-        paymentSection.style.display = 'block';
-        submitBtn.innerText = "Pay $10.00 & Register VIP";
-      } else {
-        paymentSection.style.display = 'none';
-        submitBtn.innerText = "Register / စာရင်းသွင်းမည်";
-      }
-    }
-
     // Filter Providers Search
     function filterProviders() {
       const query = document.getElementById('search-input').value.toLowerCase();
@@ -476,38 +415,13 @@
 
     // Form Submit Handler
     const form = document.getElementById('provider-register-form');
-    const submitBtn = document.getElementById('submit-btn');
     const statusMessage = document.getElementById('status-message');
 
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', (e) => {
       e.preventDefault();
-      submitBtn.disabled = true;
-      submitBtn.innerText = "Processing...";
-      statusMessage.innerText = "";
-
-      const isVip = document.getElementById('enable-vip').checked;
-
-      if (isVip) {
-        const providerName = document.getElementById('provider-name').value;
-        const { token, error } = await stripe.createToken(cardElement, { name: providerName });
-
-        if (error) {
-          statusMessage.style.color = "red";
-          statusMessage.innerText = error.message;
-          submitBtn.disabled = false;
-          submitBtn.innerText = "Pay $10.00 & Register VIP";
-          return;
-        }
-
-        console.log("Stripe Payment Token:", token.id);
-        statusMessage.style.color = "green";
-        statusMessage.innerText = "VIP စာရင်းသွင်းမှုနှင့် ငွေပေးချေမှု အောင်မြင်ပါသည်။";
-      } else {
-        statusMessage.style.color = "green";
-        statusMessage.innerText = "စာရင်းသွင်းမှု အောင်မြင်ပါသည်။";
-      }
-
-      submitBtn.disabled = false;
+      statusMessage.style.color = "green";
+      statusMessage.innerText = "စာရင်းသွင်းမှု အောင်မြင်ပါသည်။";
+      form.reset();
     });
   </script>
 
