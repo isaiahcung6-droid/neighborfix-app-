@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeighborFix - Local Services Marketplace</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 pb-20">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-100 sticky top-0 z-40 px-4 py-3 flex items-center justify-between shadow-sm">
+        <div class="flex items-center space-x-2">
+            <div class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md shadow-emerald-200">
+                <i class="fa-solid fa-hands-helping"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight text-slate-900">NeighborFix</h1>
+                <p class="text-xs text-slate-500" data-i18n="subtitle">Local Services Marketplace</p>
+            </div>
+        </div>
+
+        <!-- Language Switcher -->
+        <div class="relative">
+            <select id="langSwitch" onchange="changeLanguage(this.value)" class="bg-slate-100 border border-slate-200 text-slate-700 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium">
+                <option value="en">English</option>
+                <option value="my">မြန်မာ</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- PWA Install Banner -->
+    <div id="pwaBanner" class="mx-4 mt-4 bg-emerald-600 text-white rounded-2xl p-4 shadow-lg shadow-emerald-100 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl">
+                <i class="fa-solid fa-mobile-screen-button"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-sm" data-i18n="pwa_title">Add NeighborFix to Home Screen</h3>
+                <p class="text-xs text-emerald-100" data-i18n="pwa_desc">Install as app for faster access & offline support.</p>
+            </div>
+        </div>
+        <button onclick="installPWA()" class="bg-white text-emerald-700 font-bold px-4 py-2 rounded-xl text-sm shadow hover:bg-emerald-50 transition" data-i18n="install_btn">Install</button>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-md mx-auto px-4 mt-5">
+        
+        <!-- Search Bar -->
+        <div class="relative mb-5">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
+            <input type="text" id="searchInput" onkeyup="filterProviders()" placeholder="Search plumbers, electricians, cleaners..." data-i18n-placeholder="search_placeholder" class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm">
+        </div>
+
+        <!-- Categories Filter -->
+        <div class="flex space-x-2 overflow-x-auto pb-2 mb-5 no-scrollbar">
+            <button onclick="filterCat('all')" class="cat-btn active bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap shadow-sm shadow-emerald-200 transition">All Services</button>
+            <button onclick="filterCat('repair')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap shadow-sm hover:bg-slate-50 transition">Home Repair</button>
+            <button onclick="filterCat('cleaning')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap shadow-sm hover:bg-slate-50 transition">Cleaning & Yard</button>
+        </div>
+
+        <!-- Providers List Header -->
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="font-bold text-slate-900 text-base" data-i18n="verified_title">Verified Nearby Providers</h2>
+            <span class="text-xs text-slate-500 font-medium">5 <span data-i18n="providers_count">providers</span></span>
+        </div>
+
+        <!-- Provider Cards Container -->
+        <div id="providerList" class="space-y-4">
+            
+            <!-- Card 1 -->
+            <div class="provider-card bg-white border border-slate-100 rounded-2xl p-4 shadow-sm" data-category="repair" data-name="Carlos Rodriguez plumbing leak repair">
+                <div class="flex items-start justify-between">
+                    <div class="flex space-x-3">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Carlos" class="w-14 h-14 rounded-2xl object-cover shadow-sm">
+                        <div>
+                            <h3 class="font-bold text-slate-900">Carlos Rodriguez</h3>
+                            <p class="text-xs text-emerald-600 font-semibold mt-0.5">Plumbing & Leak Repair</p>
+                            <div class="flex items-center space-x-2 mt-1.5 text-xs text-slate-500">
+                                <span class="text-amber-500 font-bold flex items-center"><i class="fa-solid fa-star mr-1"></i> 4.9</span>
+                                <span>(38)</span>
+                                <span>•</span>
+                                <span><i class="fa-solid fa-location-dot text-slate-400 mr-0.5"></i> 0.8 mi</span>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="bg-emerald-50 text-emerald-700 font-bold text-xs px-2.5 py-1 rounded-lg">$35/hr</span>
+                </div>
+                <p class="text-xs text-slate-600 mt-3 leading-relaxed">Experienced local plumber available for quick emergency fixes, pipe replacements, and drain cleaning.</p>
+                <button onclick="openChat('Carlos Rodriguez')" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center space-x-2 shadow-sm shadow-emerald-100">
+                    <i class="fa-regular fa-comment-dots"></i>
+                    <span data-i18n="direct_chat">Direct Chat</span>
+                </button>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="provider-card bg-white border border-slate-100 rounded-2xl p-4 shadow-sm" data-category="cleaning" data-name="Daw Khin Aye home deep cleaning">
+                <div class="flex items-start justify-between">
+                    <div class="flex space-x-3">
+                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80" alt="Khin Aye" class="w-14 h-14 rounded-2xl object-cover shadow-sm">
+                        <div>
+                            <h3 class="font-bold text-slate-900">Daw Khin Aye</h3>
+                            <p class="text-xs text-emerald-600 font-semibold mt-0.5">Home & Deep Cleaning</p>
+                            <div class="flex items-center space-x-2 mt-1.5 text-xs text-slate-500">
+                                <span class="text-amber-500 font-bold flex items-center"><i class="fa-solid fa-star mr-1"></i> 5.0</span>
+                                <span>(52)</span>
+                                <span>•</span>
+                                <span><i class="fa-solid fa-location-dot text-slate-400 mr-0.5"></i> 1.2 mi</span>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="bg-emerald-50 text-emerald-700 font-bold text-xs px-2.5 py-1 rounded-lg">$25/hr</span>
+                </div>
+                <p class="text-xs text-slate-600 mt-3 leading-relaxed">Friendly house cleaning services, kitchen & bathroom deep cleans with eco-friendly products.</p>
+                <button onclick="openChat('Daw Khin Aye')" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center space-x-2 shadow-sm shadow-emerald-100">
+                    <i class="fa-regular fa-comment-dots"></i>
+                    <span data-i18n="direct_chat">Direct Chat</span>
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 py-2 px-6 flex justify-around items-center z-40 shadow-lg">
+        <button class="flex flex-col items-center text-emerald-600">
+            <i class="fa-solid fa-house text-lg"></i>
+            <span class="text-[10px] font-semibold mt-1" data-i18n="nav_home">Home</span>
+        </button>
+        <button onclick="alert('Post Service Feature')" class="w-12 h-12 bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-200 -mt-5 border-4 border-white">
+            <i class="fa-solid fa-plus text-lg"></i>
+        </button>
+        <button class="flex flex-col items-center text-slate-400 hover:text-slate-600">
+            <i class="fa-solid fa-bookmark text-lg"></i>
+            <span class="text-[10px] font-medium mt-1" data-i18n="nav_saved">Saved</span>
+        </button>
+    </nav>
+
+    <!-- Chat Modal -->
+    <div id="chatModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-3">
+                <h3 id="chatTitle" class="font-bold text-slate-900">Chat with Provider</h3>
+                <button onclick="closeChat()" class="text-slate-400 hover:text-slate-600 text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="h-48 overflow-y-auto bg-slate-50 rounded-xl p-3 mb-3 space-y-2 text-xs">
+                <div class="bg-white p-2.5 rounded-xl shadow-sm max-w-[80%]">Hello! How can I help you with your service request today?</div>
+            </div>
+            <div class="flex space-x-2">
+                <input type="text" placeholder="Type a message..." class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <button class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Translations & Script Logic -->
+    <script>
+        const translations = {
+            en: {
+                subtitle: "Local Services Marketplace",
+                pwa_title: "Add NeighborFix to Home Screen",
+                pwa_desc: "Install as app for faster access & offline support.",
+                install_btn: "Install",
+                search_placeholder: "Search plumbers, electricians, cleaners...",
+                verified_title: "Verified Nearby Providers",
+                providers_count: "providers",
+                direct_chat: "Direct Chat",
+                nav_home: "Home",
+                nav_saved: "Saved"
+            },
+            my: {
+                subtitle: "ဒေသတွင်း ဝန်ဆောင်မှု ဈေးကွက်",
+                pwa_title: "NeighborFix ကို ဖုန်း Home Screen သို့ ထည့်ရန်",
+                pwa_desc: "အမြန်ဆုံး အသုံးပြုနိုင်ရန် App ကဲ့သို့ တင်ထားပါ။",
+                install_btn: "ထည့်မည်",
+                search_placeholder: "ပိုက်ပြင်၊ မီးပြင်၊ သန့်ရှင်းရေး ရှာရန်...",
+                verified_title: "အနီးအနားရှိ အတည်ပြုပြီး ဝန်ဆောင်မှုပေးသူများ",
+                providers_count: "ဦး",
+                direct_chat: "တိုက်ရိုက် စကားပြောရန်",
+                nav_home: "ပင်မ",
+                nav_saved: "သိမ်းဆည်းရန်"
+            },
+            es: {
+                subtitle: "Mercado de Servicios Locales",
+                pwa_title: "Agregar NeighborFix a la pantalla",
+                pwa_desc: "Instalar como aplicación para acceso rápido.",
+                install_btn: "Instalar",
+                search_placeholder: "Buscar gasfiteros, limpiadores...",
+                verified_title: "Proveedores Verificados Cercanos",
+                providers_count: "proveedores",
+                direct_chat: "Chat Directo",
+                nav_home: "Inicio",
+                nav_saved: "Guardados"
+            }
+        };
+
+        function changeLanguage(lang) {
+            const elements = document.querySelectorAll('[data-i18n]');
+            elements.forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang][key]) {
+                    el.innerText = translations[lang][key];
+                }
+            });
+
+            const placeholders = document.querySelectorAll('[data-i18n-placeholder]');
+            placeholders.forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (translations[lang][key]) {
+                    el.placeholder = translations[lang][key];
+                }
+            });
+        }
+
+        function filterCat(cat) {
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
+                btn.classList.add('bg-white', 'border', 'border-slate-200', 'text-slate-600');
+            });
+            event.target.classList.remove('bg-white', 'border', 'border-slate-200', 'text-slate-600');
+            event.target.classList.add('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
+
+            const cards = document.querySelectorAll('.provider-card');
+            cards.forEach(card => {
+                if (cat === 'all' || card.getAttribute('data-category') === cat) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function filterProviders() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const cards = document.querySelectorAll('.provider-card');
+            cards.forEach(card => {
+                const name = card.getAttribute('data-name');
+                if (name.includes(query)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function openChat(providerName) {
+            document.getElementById('chatTitle.innerText') = "Chat with " + providerName;
+            document.getElementById('chatModal').classList.remove('hidden');
+        }
+
+        function closeChat() {
+            document.getElementById('chatModal').classList.add('hidden');
+        }
+
+        function installPWA() {
+            alert("PWA Add to Home Screen triggered! (On mobile, use browser menu 'Add to Home Screen')");
+        }
+    </script>
+</body>
+</html>
