@@ -3,139 +3,355 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NeighborFix - VIP Subscription ($10/month)</title>
-  <!-- Stripe JS SDK v3 -->
+  <title>NeighborFix - Local Community Services</title>
+  <!-- Stripe JS SDK -->
   <script src="https://js.stripe.com/v3/"></script>
   <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f6f8;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
       margin: 0;
+      padding: 0;
+      background-color: #f8f9fa;
+      color: #333;
     }
-    .payment-container {
-      background: #ffffff;
-      padding: 24px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      width: 100%;
-      max-width: 420px;
+    /* Header & Navigation */
+    header {
+      background-color: #ffffff;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    h2 {
-      margin-top: 0;
-      color: #1a1f36;
-      font-size: 22px;
-    }
-    .price-tag {
+    .logo {
       font-size: 20px;
       font-weight: bold;
       color: #635bff;
-      margin: 12px 0 20px;
+      text-decoration: none;
     }
-    .form-row {
+    .nav-btn {
+      background-color: #635bff;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 0 16px;
+    }
+
+    /* Search Section */
+    .search-card {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin-bottom: 24px;
+    }
+    .search-card input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    /* Views */
+    .view-section {
+      display: block;
+    }
+    .hidden {
+      display: none !important;
+    }
+
+    /* Provider List Cards */
+    .provider-card {
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      margin-bottom: 12px;
+      border-left: 4px solid #ddd;
+    }
+    .provider-card.vip {
+      border-left: 4px solid #635bff;
+      background: #f4f3ff;
+    }
+    .badge-vip {
+      background: #635bff;
+      color: #fff;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: bold;
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+    .provider-name {
+      font-size: 18px;
+      font-weight: bold;
+      margin: 0 0 4px 0;
+    }
+    .provider-category {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .provider-phone {
+      color: #635bff;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    /* Form Styles */
+    .form-card {
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .form-group {
       margin-bottom: 16px;
     }
-    label {
+    .form-group label {
       display: block;
       margin-bottom: 6px;
       font-weight: 600;
-      color: #333;
       font-size: 14px;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #e3e8ee;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .vip-checkbox-card {
+      background: #f0f4ff;
+      border: 1px solid #635bff;
+      border-radius: 8px;
+      padding: 12px;
+      margin: 16px 0;
+    }
+    #stripe-payment-section {
+      display: none;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px dashed #ccc;
     }
     #card-element {
       background: #f8f9fa;
-      padding: 12px;
+      padding: 10px;
       border: 1px solid #e3e8ee;
       border-radius: 6px;
     }
-    #submit-btn {
+    .submit-btn {
       width: 100%;
       background-color: #635bff;
-      color: #ffffff;
+      color: white;
       border: none;
       padding: 12px;
-      font-size: 16px;
       border-radius: 6px;
-      cursor: pointer;
+      font-size: 16px;
       font-weight: bold;
-      transition: background 0.2s;
+      cursor: pointer;
     }
-    #submit-btn:hover {
-      background-color: #4b45c6;
-    }
-    #payment-message {
+    #status-message {
       margin-top: 14px;
-      font-size: 14px;
       text-align: center;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
 
-  <div class="payment-container">
-    <h2>NeighborFix VIP Listing</h2>
-    <p>Get featured on top of local search results for service providers.</p>
-    <div class="price-tag">$10.00 / month</div>
+  <!-- Header Section -->
+  <header>
+    <a href="#" class="logo" onclick="showHomeView()">NeighborFix</a>
+    <button class="nav-btn" id="nav-toggle-btn" onclick="toggleView()">Register Provider</button>
+  </header>
 
-    <form id="payment-form">
-      <div class="form-row">
-        <label for="cardholder-name">Provider Name / Business Name</label>
-        <input type="text" id="cardholder-name" required placeholder="ဥပမာ - Isaiah Cung" style="width: 100%; padding: 10px; border: 1px solid #e3e8ee; border-radius: 6px; box-sizing: border-box;">
+  <div class="container">
+
+    <!-- HOME PAGE VIEW -->
+    <div id="home-view" class="view-section">
+      <div class="search-card">
+        <input type="text" id="search-input" placeholder="Search services (e.g. Handyman, Plumbing)..." onkeyup="filterProviders()">
       </div>
 
-      <div class="form-row">
-        <label for="card-element">Credit or Debit Card</label>
-        <div id="card-element"></div>
-      </div>
+      <h3 style="margin-bottom: 12px;">Local Service Providers</h3>
+      <div id="providers-container">
+        <!-- Sample Provider Cards -->
+        <div class="provider-card vip">
+          <span class="badge-vip">VIP FEATURED</span>
+          <h4 class="provider-name">Fast Fix Plumbing</h4>
+          <div class="provider-category">Plumbing / ပိုက်ပြင်</div>
+          <a href="tel:3170000000" class="provider-phone">📞 Call Service</a>
+        </div>
 
-      <button id="submit-btn" type="submit">Pay $10.00 & Activate VIP</button>
-      <div id="payment-message"></div>
-    </form>
+        <div class="provider-card">
+          <h4 class="provider-name">Greenwood Handyman</h4>
+          <div class="provider-category">Handyman / အထွေထွေပြင်ဆင်ရေး</div>
+          <a href="tel:3170000000" class="provider-phone">📞 Call Service</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROVIDER REGISTRATION FORM VIEW -->
+    <div id="register-view" class="view-section hidden">
+      <div class="form-card">
+        <h2 style="margin-top: 0;">Service Provider စာရင်းသွင်းရန်</h2>
+
+        <form id="provider-register-form">
+          <div class="form-group">
+            <label>လုပ်ငန်း သို့မဟုတ် အမည် (Business / Provider Name)</label>
+            <input type="text" id="provider-name" required>
+          </div>
+
+          <div class="form-group">
+            <label>ဖုန်းနံပါတ် (Phone Number)</label>
+            <input type="tel" id="provider-phone" required>
+          </div>
+
+          <div class="form-group">
+            <label>ဝန်ဆောင်မှု အမျိုးအစား (Service Category)</label>
+            <select id="provider-category">
+              <option value="handyman">Handyman / အထွေထွေပြင်ဆင်ရေး</option>
+              <option value="plumbing">Plumbing / ပိုက်ပြင်</option>
+              <option value="electrical">Electrical / မီးပြင်</option>
+              <option value="cleaning">Cleaning / သန့်ရှင်းရေး</option>
+              <option value="music">Music Studio / အသံသွင်း</option>
+            </select>
+          </div>
+
+          <!-- VIP Plan Switch -->
+          <div class="vip-checkbox-card">
+            <label style="cursor: pointer; color: #635bff;">
+              <input type="checkbox" id="enable-vip" onchange="toggleVipSection()">
+              <strong>VIP Listing ရယူမည် ($10.00 / လ)</strong>
+            </label>
+            <p style="margin: 4px 0 0 22px; font-size: 12px; color: #555;">
+              ရှာဖွေမှု ရလဒ်များတွင် ထိပ်ဆုံးမှ ပေါ်လွင်စွာ ဖော်ပြပေးမည်ဖြစ်ပါသည်။
+            </p>
+          </div>
+
+          <!-- Stripe Card Section -->
+          <div id="stripe-payment-section">
+            <label style="font-size: 14px; font-weight: 600; display: block; margin-bottom: 6px;">
+              Credit / Debit Card အချက်အလက်ထည့်ပါ
+            </label>
+            <div id="card-element"></div>
+          </div>
+
+          <button type="submit" class="submit-btn" id="submit-btn" style="margin-top: 20px;">Register / စာရင်းသွင်းမည်</button>
+          <div id="status-message"></div>
+        </form>
+      </div>
+    </div>
+
   </div>
 
   <script>
-    // တကယ့် Live အသုံးပြုရန် Stripe Dashboard (Developers > API keys) မှ pk_live_... ကို ဤနေရာတွင် ထည့်ပါ
-    const STRIPE_PUBLISHABLE_KEY = "pk_live_YOUR_ACTUAL_LIVE_KEY_HERE"; 
-
+    // Stripe Setup
+    const STRIPE_PUBLISHABLE_KEY = "pk_live_YOUR_ACTUAL_LIVE_KEY_HERE";
     const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
     const elements = stripe.elements();
     const cardElement = elements.create('card');
     cardElement.mount('#card-element');
 
-    const form = document.getElementById('payment-form');
-    const submitBtn = document.getElementById('submit-btn');
-    const paymentMessage = document.getElementById('payment-message');
+    // Page View Toggle (Home <-> Register)
+    function toggleView() {
+      const homeView = document.getElementById('home-view');
+      const registerView = document.getElementById('register-view');
+      const navBtn = document.getElementById('nav-toggle-btn');
 
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
+      if (registerView.classList.contains('hidden')) {
+        registerView.classList.remove('hidden');
+        homeView.classList.add('hidden');
+        navBtn.innerText = "← Back to Home";
+      } else {
+        showHomeView();
+      }
+    }
+
+    function showHomeView() {
+      document.getElementById('home-view').classList.remove('hidden');
+      document.getElementById('register-view').classList.add('hidden');
+      document.getElementById('nav-toggle-btn').innerText = "Register Provider";
+    }
+
+    // Toggle Stripe Payment Box
+    function toggleVipSection() {
+      const isVipChecked = document.getElementById('enable-vip').checked;
+      const paymentSection = document.getElementById('stripe-payment-section');
+      const submitBtn = document.getElementById('submit-btn');
+
+      if (isVipChecked) {
+        paymentSection.style.display = 'block';
+        submitBtn.innerText = "Pay $10.00 & Register VIP";
+      } else {
+        paymentSection.style.display = 'none';
+        submitBtn.innerText = "Register / စာရင်းသွင်းမည်";
+      }
+    }
+
+    // Filter Providers Search
+    function filterProviders() {
+      const query = document.getElementById('search-input').value.toLowerCase();
+      const cards = document.querySelectorAll('.provider-card');
+
+      cards.forEach(card => {
+        const text = card.innerText.toLowerCase();
+        card.style.display = text.includes(query) ? 'block' : 'none';
+      });
+    }
+
+    // Form Submit Handler
+    const form = document.getElementById('provider-register-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const statusMessage = document.getElementById('status-message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
       submitBtn.disabled = true;
       submitBtn.innerText = "Processing...";
-      paymentMessage.innerText = "";
+      statusMessage.innerText = "";
 
-      const cardholderName = document.getElementById('cardholder-name').value;
+      const isVip = document.getElementById('enable-vip').checked;
 
-      // Stripe ထံသို့ Card အချက်အလက်ပို့ပြီး Token တောင်းခံခြင်း
-      const { token, error } = await stripe.createToken(cardElement, {
-        name: cardholderName,
-      });
+      if (isVip) {
+        const providerName = document.getElementById('provider-name').value;
+        const { token, error } = await stripe.createToken(cardElement, { name: providerName });
 
-      if (error) {
-        paymentMessage.style.color = "#fa755a";
-        paymentMessage.innerText = error.message;
-        submitBtn.disabled = false;
-        submitBtn.innerText = "Pay $10.00 & Activate VIP";
+        if (error) {
+          statusMessage.style.color = "red";
+          statusMessage.innerText = error.message;
+          submitBtn.disabled = false;
+          submitBtn.innerText = "Pay $10.00 & Register VIP";
+          return;
+        }
+
+        console.log("Stripe Payment Token:", token.id);
+        statusMessage.style.color = "green";
+        statusMessage.innerText = "VIP စာရင်းသွင်းမှုနှင့် ငွေပေးချေမှု အောင်မြင်ပါသည်။";
       } else {
-        // ငွေပေးချေမှု အောင်မြင်ပါက Token ရလာမည်ဖြစ်ပြီး ၎င်းကို Backend သို့ ပို့ပေးရပါမည်
-        paymentMessage.style.color = "#28a745";
-        paymentMessage.innerText = "Payment Successful! VIP Activated.";
-        console.log("Stripe Token Generated:", token.id);
-        
-        // ဤနေရာတွင် Database သို့မဟုတ် Backend သို့ Token ပို့ကာ VIP Status အသက်သွင်းသည့် လုပ်ဆောင်ချက်များကို ထည့်သွင်းနိုင်ပါသည်
-        submitBtn.innerText = "Success!";
+        statusMessage.style.color = "green";
+        statusMessage.innerText = "စာရင်းသွင်းမှု အောင်မြင်ပါသည်။";
       }
+
+      submitBtn.disabled = false;
     });
   </script>
 
