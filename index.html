@@ -7,6 +7,8 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Stripe JS SDK -->
+    <script src="https://js.stripe.com/v3/"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -101,7 +103,7 @@
         </button>
     </nav>
 
-    <!-- Post Service Modal (With Fee & GPS Options) -->
+    <!-- Post Service Modal (With Stripe Payment for VIP) -->
     <div id="postModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
@@ -115,12 +117,12 @@
                     <label class="block text-xs font-bold text-amber-900 mb-1">Select Promotion Plan</label>
                     <div class="grid grid-cols-2 gap-2 mt-2">
                         <label class="cursor-pointer border border-slate-200 rounded-xl p-2.5 bg-white text-center flex flex-col items-center justify-center hover:border-emerald-500">
-                            <input type="radio" name="plan" value="free" checked class="mb-1 text-emerald-600">
+                            <input type="radio" name="plan" value="free" checked onchange="toggleVipPayment()" class="mb-1 text-emerald-600">
                             <span class="text-xs font-bold text-slate-800">Basic (Free)</span>
                             <span class="text-[10px] text-slate-500">$0 / Standard Listing</span>
                         </label>
                         <label class="cursor-pointer border-2 border-amber-400 rounded-xl p-2.5 bg-amber-100/50 text-center flex flex-col items-center justify-center shadow-sm">
-                            <input type="radio" name="plan" value="vip" class="mb-1 text-amber-600">
+                            <input type="radio" name="plan" value="vip" onchange="toggleVipPayment()" class="mb-1 text-amber-600">
                             <span class="text-xs font-bold text-amber-800"><i class="fa-solid fa-crown text-amber-500 mr-1"></i> VIP Featured</span>
                             <span class="text-[10px] font-semibold text-amber-700">$10 / Month Top Rank</span>
                         </label>
@@ -171,7 +173,15 @@
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Short Description</label>
                     <textarea id="pDesc" rows="2" required class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
                 </div>
-                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow mt-2">Publish Listing</button>
+
+                <!-- Stripe Card Element Section (VIP ရွေးမှပေါ်မည်) -->
+                <div id="stripePaymentSection" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-3 mt-2">
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Credit / Debit Card ($10.00 VIP Fee)</label>
+                    <div id="card-element" class="bg-white p-2.5 rounded-lg border border-slate-200"></div>
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow mt-2">Publish Listing</button>
+                <div id="statusMessage" class="text-xs text-center mt-2"></div>
             </form>
         </div>
     </div>
@@ -210,13 +220,19 @@
         </div>
     </div>
 
-    <!-- Script Logic with Google Maps & Live GPS -->
+    <!-- Script Logic with Stripe & Google Maps -->
     <script>
+        // Stripe Setup
+        const STRIPE_PUBLISHABLE_KEY = "pk_live_YOUR_ACTUAL_LIVE_KEY_HERE";
+        const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+        const elements = stripe.elements();
+        const cardElement = elements.create('card');
+        cardElement.mount('#card-element');
+
         let currentLang = 'en';
         let userLat = null;
         let userLng = null;
 
-        // Default Data with Lat/Lng included
         let providers = JSON.parse(localStorage.getItem('nf_providers')) || [
             { id: 1, name: "Carlos Rodriguez", category: "plumbing", title: "Plumbing & Pipe Repair", rate: "$35/hr", lat: 39.6137, lng: -86.1064, rating: "4.9", phone: "1234567890", desc: "Experienced local plumber available for quick emergency fixes, pipe replacements, and drain cleaning.", isVip: true, img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" },
             { id: 2, name: "Daw Khin Aye", category: "cleaning", title: "Home & Deep Cleaning", rate: "$25/hr", lat: 39.6237, lng: -86.1164, rating: "5.0", phone: "1234567891", desc: "Friendly house cleaning services, kitchen & bathroom deep cleans with eco-friendly products.", isVip: false, img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80" },
@@ -224,18 +240,30 @@
             { id: 4, name: "Mike Miller", category: "towing", title: "24/7 Towing & Auto Recovery", rate: "$60/flat", lat: 39.6037, lng: -86.1264, rating: "4.9", phone: "1234567893", desc: "Fast emergency towing service, roadside assistance, battery jump-start, and vehicle recovery.", isVip: false, img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" }
         ];
 
-        // Haversine Formula for Distance Calculation (Miles)
+        function toggleVipPayment() {
+            const isVip = document.querySelector('input[name="plan"]:checked').value === 'vip';
+            const paymentSection = document.getElementById('stripePaymentSection');
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (isVip) {
+                paymentSection.classList.remove('hidden');
+                submitBtn.innerText = "Pay $10.00 & Publish VIP";
+            } else {
+                paymentSection.classList.add('hidden');
+                submitBtn.innerText = "Publish Listing";
+            }
+        }
+
         function calculateDistance(lat1, lon1, lat2, lon2) {
             if (!lat1 || !lon1 || !lat2 || !lon2) return "0.8 mi";
-            const R = 3958.8; // Radius of Earth in Miles
+            const R = 3958.8;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
             const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
                       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
                       Math.sin(dLon / 2) * Math.sin(dLon / 2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            const d = R * c;
-            return d.toFixed(1) + " mi";
+            return (R * c).toFixed(1) + " mi";
         }
 
         function getUserLocation() {
@@ -249,13 +277,9 @@
                         gpsText.innerText = `GPS Active: (${userLat.toFixed(2)}, ${userLng.toFixed(2)})`;
                         renderProviders();
                     },
-                    (error) => {
-                        gpsText.innerText = "GPS Disabled / Using default location.";
-                    }
+                    (error) => { gpsText.innerText = "GPS Disabled / Using default location."; }
                 );
-            } else {
-                gpsText.innerText = "Geolocation not supported by browser.";
-            }
+            } else { gpsText.innerText = "Geolocation not supported."; }
         }
 
         function renderProviders(list = providers) {
@@ -267,7 +291,6 @@
                 return;
             }
 
-            // Sort VIP listings to top
             const sortedList = [...list].sort((a, b) => (b.isVip ? 1 : 0) - (a.isVip ? 1 : 0));
             const chatText = translations[currentLang] && translations[currentLang]['direct_chat'] ? translations[currentLang]['direct_chat'] : 'Direct Chat';
 
@@ -309,15 +332,12 @@
 
         function openMapModal(name, lat, lng) {
             document.getElementById('mapTitle').innerText = name + " Location Map";
-            const mapUrl = `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
-            document.getElementById('googleMapIframe').src = mapUrl;
+            document.getElementById('googleMapIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
             document.getElementById('getDirectionBtn').href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
             document.getElementById('mapModal').classList.remove('hidden');
         }
 
-        function closeMapModal() {
-            document.getElementById('mapModal').classList.add('hidden');
-        }
+        function closeMapModal() { document.getElementById('mapModal').classList.add('hidden'); }
 
         function capturePostLocation() {
             if (navigator.geolocation) {
@@ -329,10 +349,30 @@
             }
         }
 
-        function saveProvider(e) {
+        async function saveProvider(e) {
             e.preventDefault();
             const selectedPlan = document.querySelector('input[name="plan"]:checked').value;
             const isVip = selectedPlan === 'vip';
+            const submitBtn = document.getElementById('submitBtn');
+            const statusMsg = document.getElementById('statusMessage');
+
+            submitBtn.disabled = true;
+            statusMsg.innerText = "";
+
+            if (isVip) {
+                submitBtn.innerText = "Processing Payment...";
+                const providerName = document.getElementById('pName').value;
+                const { token, error } = await stripe.createToken(cardElement, { name: providerName });
+
+                if (error) {
+                    statusMsg.style.color = "red";
+                    statusMsg.innerText = error.message;
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "Pay $10.00 & Publish VIP";
+                    return;
+                }
+                console.log("Stripe Token:", token.id);
+            }
 
             const newP = {
                 id: Date.now(),
@@ -353,9 +393,12 @@
             localStorage.setItem('nf_providers', JSON.stringify(providers));
             renderProviders();
             closePostModal();
+            submitBtn.disabled = false;
+            document.getElementById('providerForm').reset();
+            toggleVipPayment();
 
             if(isVip) {
-                alert("Thank you for choosing VIP Plan ($10/month)! Your post is now featured at the top.");
+                alert("VIP Payment Successful ($10)! Your listing is now pinned at the top.");
             } else {
                 alert("Your free listing has been posted successfully!");
             }
@@ -369,11 +412,8 @@
             e.target.classList.remove('bg-white', 'border', 'border-slate-200', 'text-slate-600');
             e.target.classList.add('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
 
-            if(cat === 'all') {
-                renderProviders(providers);
-            } else {
-                renderProviders(providers.filter(p => p.category === cat));
-            }
+            if(cat === 'all') { renderProviders(providers); } 
+            else { renderProviders(providers.filter(p => p.category === cat)); }
         }
 
         function filterProviders() {
@@ -388,14 +428,11 @@
             document.getElementById('chatModal').classList.remove('hidden');
         }
 
-        function closeChat() {
-            document.getElementById('chatModal').classList.add('hidden');
-        }
+        function closeChat() { document.getElementById('chatModal').classList.add('hidden'); }
 
         function sendMessage() {
             const input = document.getElementById('chatInput');
             if(!input.value.trim()) return;
-            
             const msgBox = document.getElementById('chatMessages');
             msgBox.innerHTML += `<div class="bg-emerald-600 text-white p-2.5 rounded-xl shadow-sm max-w-[80%] ml-auto text-xs">${input.value}</div>`;
             input.value = '';
