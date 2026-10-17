@@ -14,18 +14,18 @@
     body {
       margin: 0;
       padding: 0;
-      background-color: #f8f9fa;
-      color: #1a1f36;
+      background-color: #f4f6f8;
+      color: #2c3e50;
     }
-    
-    /* Navigation Bar */
+
+    /* Top Navigation Header */
     header {
       background-color: #ffffff;
       padding: 16px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid #eaeaea;
+      border-bottom: 1px solid #e5e7eb;
       position: sticky;
       top: 0;
       z-index: 100;
@@ -33,14 +33,14 @@
     .logo {
       font-size: 22px;
       font-weight: 800;
-      color: #635bff;
+      color: #10b981; /* Primary Green */
       text-decoration: none;
     }
-    .register-nav-btn {
-      background-color: #635bff;
+    .register-btn {
+      background-color: #10b981;
       color: #ffffff;
       border: none;
-      padding: 10px 18px;
+      padding: 8px 16px;
       border-radius: 8px;
       cursor: pointer;
       font-weight: 700;
@@ -48,12 +48,139 @@
     }
 
     .container {
-      max-width: 500px;
+      max-width: 600px;
       margin: 0 auto;
-      padding: 20px 16px;
+      padding: 16px;
     }
 
-    /* Views */
+    /* Search Bar */
+    .search-box {
+      background: #ffffff;
+      border-radius: 25px;
+      padding: 4px 16px;
+      border: 1px solid #e5e7eb;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .search-box input {
+      width: 100%;
+      border: none;
+      padding: 12px 0;
+      font-size: 15px;
+      outline: none;
+      color: #374151;
+    }
+
+    /* Category Horizontal Scroll Pills */
+    .categories-scroll {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      scrollbar-width: none; /* Firefox */
+    }
+    .categories-scroll::-webkit-scrollbar {
+      display: none; /* Chrome/Safari */
+    }
+    .category-pill {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      color: #374151;
+    }
+    .category-pill.active {
+      background: #10b981;
+      color: #ffffff;
+      border-color: #10b981;
+    }
+
+    /* Section Header */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #111827;
+      margin: 0;
+    }
+    .provider-count {
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    /* Provider Listing Card (Exact Match to Image) */
+    .provider-card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      border: 1px solid #f3f4f6;
+    }
+    .provider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .provider-profile {
+      display: flex;
+      gap: 12px;
+    }
+    .avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      object-fit: cover;
+      background-color: #e5e7eb;
+    }
+    .provider-info h4 {
+      margin: 0 0 2px 0;
+      font-size: 17px;
+      font-weight: 700;
+      color: #111827;
+    }
+    .provider-service {
+      color: #10b981;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .rating-distance {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .rating-star {
+      color: #f59e0b;
+    }
+    .price-tag {
+      background: #ecfdf5;
+      color: #059669;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 6px 12px;
+      border-radius: 12px;
+    }
+    .provider-desc {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 10px;
+      line-height: 1.4;
+    }
+
+    /* Views Toggle */
     .view-section {
       display: block;
     }
@@ -61,86 +188,12 @@
       display: none !important;
     }
 
-    /* Search Box */
-    .search-card {
-      background: #ffffff;
-      padding: 14px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-      margin-bottom: 24px;
-    }
-    .search-card input {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1px solid #e3e8ee;
-      border-radius: 8px;
-      font-size: 15px;
-      outline: none;
-      color: #333;
-    }
-    .search-card input::placeholder {
-      color: #a3acb9;
-    }
-
-    .section-title {
-      font-size: 18px;
-      font-weight: 800;
-      margin: 0 0 16px 0;
-      color: #1a1f36;
-    }
-
-    /* Provider Card Style (Exact as image) */
-    .provider-card {
-      background: #ffffff;
-      padding: 18px 20px;
-      border-radius: 14px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-      margin-bottom: 14px;
-      position: relative;
-    }
-    .provider-card.vip {
-      background: #f4f3ff;
-      border-left: 5px solid #635bff;
-    }
-    .badge-vip {
-      background: #635bff;
-      color: #ffffff;
-      font-size: 11px;
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-weight: 800;
-      display: inline-block;
-      margin-bottom: 8px;
-      letter-spacing: 0.5px;
-    }
-    .provider-name {
-      font-size: 18px;
-      font-weight: 800;
-      margin: 0 0 6px 0;
-      color: #1a1f36;
-    }
-    .provider-category {
-      color: #6b7280;
-      font-size: 14px;
-      margin-bottom: 14px;
-      font-weight: 500;
-    }
-    .call-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: #635bff;
-      font-weight: 700;
-      text-decoration: none;
-      font-size: 15px;
-    }
-
     /* Registration Form Card */
     .form-card {
       background: #ffffff;
       padding: 24px;
       border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
     .form-group {
       margin-bottom: 16px;
@@ -154,13 +207,13 @@
     .form-group input, .form-group select {
       width: 100%;
       padding: 12px;
-      border: 1px solid #e3e8ee;
+      border: 1px solid #e5e7eb;
       border-radius: 8px;
       font-size: 15px;
     }
     .vip-checkbox-card {
-      background: #f0f4ff;
-      border: 1px solid #635bff;
+      background: #ecfdf5;
+      border: 1px solid #10b981;
       border-radius: 10px;
       padding: 14px;
       margin: 18px 0;
@@ -172,14 +225,14 @@
       border-top: 1px dashed #ccc;
     }
     #card-element {
-      background: #f8f9fa;
+      background: #f9fafb;
       padding: 12px;
-      border: 1px solid #e3e8ee;
+      border: 1px solid #e5e7eb;
       border-radius: 8px;
     }
     .submit-btn {
       width: 100%;
-      background-color: #635bff;
+      background-color: #10b981;
       color: white;
       border: none;
       padding: 14px;
@@ -197,41 +250,86 @@
 </head>
 <body>
 
-  <!-- Header -->
+  <!-- Top Header -->
   <header>
     <a href="#" class="logo" onclick="showHomeView()">NeighborFix</a>
-    <button class="register-nav-btn" id="nav-toggle-btn" onclick="toggleView()">Register Provider</button>
+    <button class="register-btn" id="nav-toggle-btn" onclick="toggleView()">Register Provider</button>
   </header>
 
   <div class="container">
 
-    <!-- HOME PAGE VIEW (Original Design) -->
+    <!-- HOME PAGE VIEW (Original Green Design) -->
     <div id="home-view" class="view-section">
-      <div class="search-card">
-        <input type="text" id="search-input" placeholder="Search services (e.g. Handyman, Plumbing)" onkeyup="filterProviders()">
+
+      <!-- Search Input -->
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="Search plumbers, electricians, cleaners..." onkeyup="filterProviders()">
       </div>
 
-      <h3 class="section-title">Local Service Providers</h3>
+      <!-- Category Pills -->
+      <div class="categories-scroll">
+        <div class="category-pill active">All Services</div>
+        <div class="category-pill">အိမ်ပြင်ပြင်ရေး</div>
+        <div class="category-pill">မီး / Heater / A/C</div>
+        <div class="category-pill">ရေပိုက်</div>
+      </div>
 
+      <!-- Section Title -->
+      <div class="section-header">
+        <h3 class="section-title">Featured Nearby Providers</h3>
+        <span class="provider-count" id="provider-count">5 providers</span>
+      </div>
+
+      <!-- Provider List -->
       <div id="providers-container">
-        <!-- VIP Card -->
-        <div class="provider-card vip">
-          <span class="badge-vip">VIP FEATURED</span>
-          <h4 class="provider-name">Fast Fix Plumbing</h4>
-          <div class="provider-category">Plumbing / ပိုက်ပြင်</div>
-          <a href="tel:3170000000" class="call-btn">📞 Call Service</a>
+
+        <!-- Card 1 (Matches Image Exactly) -->
+        <div class="provider-card">
+          <div class="provider-header">
+            <div class="provider-profile">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" class="avatar" alt="Carlos">
+              <div class="provider-info">
+                <h4>Carlos Rodriguez</h4>
+                <div class="provider-service">Plumbing & Pipe Repair</div>
+                <div class="rating-distance">
+                  <span class="rating-star">★</span>
+                  <strong>4.9</strong> (38) • 📍 0.8 mi
+                </div>
+              </div>
+            </div>
+            <div class="price-tag">$35/hr</div>
+          </div>
+          <div class="provider-desc">
+            Experienced local plumber available for quick emergency fixes, pipe repairs, and installations.
+          </div>
         </div>
 
-        <!-- Normal Card -->
+        <!-- Card 2 -->
         <div class="provider-card">
-          <h4 class="provider-name">Greenwood Handyman</h4>
-          <div class="provider-category">Handyman / အထွေထွေပြင်ဆင်ရေး</div>
-          <a href="tel:3170000000" class="call-btn">📞 Call Service</a>
+          <div class="provider-header">
+            <div class="provider-profile">
+              <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80" class="avatar" alt="David">
+              <div class="provider-info">
+                <h4>David Miller</h4>
+                <div class="provider-service">Electrician & AC Repair</div>
+                <div class="rating-distance">
+                  <span class="rating-star">★</span>
+                  <strong>5.0</strong> (24) • 📍 1.2 mi
+                </div>
+              </div>
+            </div>
+            <div class="price-tag">$40/hr</div>
+          </div>
+          <div class="provider-desc">
+            Certified electrician handling wiring, circuit breakers, and A/C heating maintenance.
+          </div>
         </div>
+
       </div>
+
     </div>
 
-    <!-- REGISTRATION VIEW -->
+    <!-- REGISTER PROVIDER VIEW -->
     <div id="register-view" class="view-section hidden">
       <div class="form-card">
         <h2 style="margin-top: 0; font-size: 20px;">Service Provider စာရင်းသွင်းရန်</h2>
@@ -250,21 +348,20 @@
           <div class="form-group">
             <label>ဝန်ဆောင်မှု အမျိုးအစား (Service Category)</label>
             <select id="provider-category">
-              <option value="handyman">Handyman / အထွေထွေပြင်ဆင်ရေး</option>
-              <option value="plumbing">Plumbing / ပိုက်ပြင်</option>
-              <option value="electrical">Electrical / မီးပြင်</option>
-              <option value="cleaning">Cleaning / သန့်ရှင်းရေး</option>
-              <option value="music">Music Studio / အသံသွင်း</option>
+              <option value="plumbing">ရေပိုက် / Pipe Repair</option>
+              <option value="electrical">မီး / Heater / A/C</option>
+              <option value="handyman">အိမ်ပြင်ပြင်ရေး / Handyman</option>
+              <option value="cleaning">သန့်ရှင်းရေး / Cleaning</option>
             </select>
           </div>
 
           <!-- VIP Plan Switch -->
           <div class="vip-checkbox-card">
-            <label style="cursor: pointer; color: #635bff;">
+            <label style="cursor: pointer; color: #059669;">
               <input type="checkbox" id="enable-vip" onchange="toggleVipSection()">
               <strong>VIP Listing ရယူမည် ($10.00 / လ)</strong>
             </label>
-            <p style="margin: 4px 0 0 22px; font-size: 12px; color: #555;">
+            <p style="margin: 4px 0 0 22px; font-size: 12px; color: #4b5563;">
               ရှာဖွေမှု ရလဒ်များတွင် ထိပ်ဆုံးမှ ပေါ်လွင်စွာ ဖော်ပြပေးမည်ဖြစ်ပါသည်။
             </p>
           </div>
