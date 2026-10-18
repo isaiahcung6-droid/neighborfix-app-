@@ -249,7 +249,7 @@
                 <button onclick="closeChat()" class="text-slate-400 hover:text-slate-600 text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="chatMessages" class="h-52 overflow-y-auto bg-slate-50 rounded-xl p-3 mb-3 space-y-2 text-xs">
-                <div class="bg-white p-2.5 rounded-xl shadow-sm max-w-[80%] text-slate-600">Hello! Thanks for reaching out. How can I help you today?</div>
+                <!-- Chat messages will be loaded here -->
             </div>
             <div class="flex space-x-2">
                 <input type="text" id="chatInput" placeholder="Type a message..." class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -301,6 +301,9 @@
 
         let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || ["isaiah cung"];
         let notifications = JSON.parse(localStorage.getItem('nf_notifications')) || [];
+        
+        // Persistent Chat History Storage
+        let chatHistories = JSON.parse(localStorage.getItem('nf_chat_histories')) || {};
 
         function previewImage(event) {
             const file = event.target.files[0];
@@ -589,7 +592,6 @@
 
             const isAdmin = (providerName.toLowerCase() === ADMIN_NAME || providerPhone === ADMIN_PHONE);
 
-            // If it's a new post and not admin, process payment
             if (!editId && !isAdmin) {
                 const totalFeeText = (selectedPlan === 'vip') ? "$25.00" : "$10.00";
                 submitBtn.disabled = true;
@@ -607,7 +609,6 @@
             }
 
             if (editId) {
-                // Update existing listing
                 providers = providers.map(p => {
                     if (p.id == editId) {
                         return {
@@ -631,7 +632,6 @@
                 alert("Profile & Uploaded Photo successfully updated!");
                 addNotification(`Listing updated by ${providerName}`);
             } else {
-                // Create new listing
                 const isAlreadyVip = vipMembers.includes(providerName.toLowerCase());
                 let isVipFinal = isAlreadyVip || selectedPlan === 'vip';
 
@@ -691,10 +691,37 @@
             renderProviders(filtered);
         }
 
+        // Persistent Chat Logic
         function openChat(name) {
             currentChatProvider = name;
             document.getElementById('chatTitle').innerText = "Chat with " + name;
+            
+            const msgBox = document.getElementById('chatMessages');
+            
+            // Load saved messages for this specific provider
+            if (!chatHistories[name]) {
+                chatHistories[name] = [
+                    { sender: 'provider', text: "Hello! Thanks for reaching out. How can I help you today?" }
+                ];
+            }
+            
+            renderChatMessages();
             document.getElementById('chatModal').classList.remove('hidden');
+        }
+
+        function renderChatMessages() {
+            const msgBox = document.getElementById('chatMessages');
+            const history = chatHistories[currentChatProvider] || [];
+            
+            msgBox.innerHTML = history.map(m => {
+                if (m.sender === 'user') {
+                    return `<div class="bg-emerald-600 text-white p-2.5 rounded-xl shadow-sm max-w-[80%] ml-auto text-xs">${m.text}</div>`;
+                } else {
+                    return `<div class="bg-white p-2.5 rounded-xl shadow-sm max-w-[80%] text-slate-600">${m.text}</div>`;
+                }
+            }).join('');
+            
+            msgBox.scrollTop = msgBox.scrollHeight;
         }
 
         function closeChat() { document.getElementById('chatModal').classList.add('hidden'); }
@@ -703,10 +730,17 @@
             const input = document.getElementById('chatInput');
             if(!input.value.trim()) return;
             const msgText = input.value;
-            const msgBox = document.getElementById('chatMessages');
-            msgBox.innerHTML += `<div class="bg-emerald-600 text-white p-2.5 rounded-xl shadow-sm max-w-[80%] ml-auto text-xs">${msgText}</div>`;
+            
+            if (!chatHistories[currentChatProvider]) {
+                chatHistories[currentChatProvider] = [];
+            }
+            
+            // Push user message
+            chatHistories[currentChatProvider].push({ sender: 'user', text: msgText });
+            localStorage.setItem('nf_chat_histories', JSON.stringify(chatHistories));
+            
             input.value = '';
-            msgBox.scrollTop = msgBox.scrollHeight;
+            renderChatMessages();
 
             addNotification(`New message regarding ${currentChatProvider}: "${msgText}"`);
         }
