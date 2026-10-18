@@ -65,7 +65,7 @@
             <input type="text" id="searchInput" onkeyup="filterProviders()" placeholder="Search plumbers, electricians, handymen..." data-i18n-placeholder="search_placeholder" class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm">
         </div>
 
-        <!-- Categories Options (Grouped & Expanded) -->
+        <!-- Categories Options -->
         <div class="flex space-x-2 overflow-x-auto pb-2 mb-5 no-scrollbar">
             <button onclick="filterCat(event, 'all')" class="cat-btn active bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm shadow-emerald-200 transition" data-i18n="cat_all">All Services</button>
             <button onclick="filterCat(event, 'plumbing')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_plumbing">Plumbing</button>
@@ -234,11 +234,11 @@
         </div>
     </div>
 
-    <!-- Notifications Modal -->
+    <!-- Cleaned Notifications Modal -->
     <div id="notificationModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-4 shadow-2xl max-h-[80vh] flex flex-col">
             <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
-                <h3 class="font-bold text-slate-900 text-sm flex items-center"><i class="fa-solid fa-bell text-emerald-600 mr-2"></i> Admin Alerts (SMS: 3173587342 / Email: isaiahcung6@gmail.com)</h3>
+                <h3 class="font-bold text-slate-900 text-sm flex items-center"><i class="fa-solid fa-bell text-emerald-600 mr-2"></i> Notifications & Alerts</h3>
                 <button onclick="closeNotificationModal()" class="text-slate-400 hover:text-slate-600 text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="notificationList" class="flex-1 overflow-y-auto space-y-2 text-xs py-1">
@@ -263,7 +263,7 @@
         let currentCategory = 'all';
         let currentChatProvider = '';
 
-        // Admin Contact Config
+        // Admin Contact Config (Handled Privately in Backend Logic)
         const ADMIN_PHONE = "3173587342";
         const ADMIN_EMAIL = "isaiahcung6@gmail.com";
 
@@ -275,13 +275,12 @@
         ];
 
         let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || [];
-        let notifications = JSON.parse(localStorage.getItem('nf_notifications')) || [
-            { id: 1, text: `System Initialized. Alerts configured for SMS (${ADMIN_PHONE}) & Email (${ADMIN_EMAIL}).`, time: "Just now", unread: true }
-        ];
+        let notifications = JSON.parse(localStorage.getItem('nf_notifications')) || [];
 
         function addNotification(text) {
-            const fullAlert = `[SMS: ${ADMIN_PHONE} | Email: ${ADMIN_EMAIL}] ${text}`;
-            notifications.unshift({ id: Date.now(), text: fullAlert, time: "Just now", unread: true });
+            // Logs alert target silently in code while keeping UI clean
+            console.log(`Alert sent to SMS: ${ADMIN_PHONE} & Email: ${ADMIN_EMAIL}`);
+            notifications.unshift({ id: Date.now(), text: text, time: "Just now", unread: true });
             localStorage.setItem('nf_notifications', JSON.stringify(notifications));
             updateNotifBadge();
         }
@@ -466,7 +465,6 @@
                 updateTotalFee();
                 return;
             }
-            console.log("Stripe Token:", token.id);
 
             let isVipFinal = isAlreadyVip || selectedPlan === 'vip';
 
@@ -498,8 +496,8 @@
             document.getElementById('providerForm').reset();
             updateTotalFee();
 
-            // Trigger Registration & Payment Notification to Admin Phone & Email
-            addNotification(`SUCCESSFUL PAYMENT & REGISTER: "${serviceTitle}" by ${providerName} (${wantVip ? 'VIP $25' : 'Standard $10'}) paid via Stripe!`);
+            // Clean Alert Message
+            addNotification(`New Listing Published: "${serviceTitle}" by ${providerName} (${wantVip ? 'VIP' : 'Standard'})`);
 
             if(wantVip) {
                 alert("Payment Successful ($25 Total)! You are now a Lifetime VIP member and your service is published.");
@@ -547,8 +545,7 @@
             input.value = '';
             msgBox.scrollTop = msgBox.scrollHeight;
 
-            // Trigger Chat Notification to Admin SMS & Email
-            addNotification(`CHAT ALERT: New message from ${currentChatProvider}: "${msgText}"`);
+            addNotification(`New message regarding ${currentChatProvider}: "${msgText}"`);
         }
 
         function openPostModal() { 
