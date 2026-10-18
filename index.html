@@ -190,13 +190,10 @@
                     <textarea id="pDesc" rows="2" required class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
                 </div>
 
-                <!-- Stripe Card & Admin Code Section -->
-                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 mt-2">
+                <!-- Secure Stripe Card Section (Hidden for Admin Automatically) -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 mt-2" id="paymentSectionContainer">
                     <label class="block text-xs font-bold text-slate-700 mb-1.5" id="cardLabel"><i class="fa-solid fa-credit-card mr-1 text-emerald-600"></i> Credit / Card Payment ($10.00 Service Fee)</label>
                     <div id="card-element" class="bg-white p-3 rounded-lg border border-slate-200"></div>
-                    <div class="mt-2">
-                        <input type="text" id="adminCodeInput" placeholder="Admin Code (Isaiah24 for Free Post)" class="w-full bg-white border border-dashed border-emerald-400 rounded-lg px-3 py-1.5 text-xs text-center font-medium text-emerald-700 focus:outline-none">
-                    </div>
                 </div>
 
                 <button type="submit" id="submitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow mt-2">Pay $10.00 & Publish Listing</button>
@@ -268,9 +265,10 @@
         let currentCategory = 'all';
         let currentChatProvider = '';
 
-        // Admin Contact Config
+        // Admin Config (Secret verification)
         const ADMIN_PHONE = "3173587342";
         const ADMIN_EMAIL = "isaiahcung6@gmail.com";
+        const ADMIN_NAME = "isaiah cung";
 
         let providers = JSON.parse(localStorage.getItem('nf_providers')) || [
             { id: 1, name: "David Miller", category: "security", title: "CCTV & Smart Lock Setup", rate: "$50/hr", lat: 39.6137, lng: -86.1064, rating: "5.0", phone: "1234567894", desc: "Expert setup for Ring cameras, CCTV security systems, smart video doorbells, and electronic locks.", isVip: true, img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80" },
@@ -332,11 +330,25 @@
 
         function updateTotalFee() {
             const selectedPlan = document.querySelector('input[name="plan"]:checked').value;
-            const nameInput = document.getElementById('pName').value.trim();
+            const nameInput = document.getElementById('pName').value.trim().toLowerCase();
+            const phoneInput = document.getElementById('pPhone').value.trim();
             const submitBtn = document.getElementById('submitBtn');
             const cardLabel = document.getElementById('cardLabel');
+            const paymentSection = document.getElementById('paymentSectionContainer');
 
-            let isAlreadyVip = nameInput && vipMembers.includes(nameInput.toLowerCase());
+            // Automatically detect if Admin is posting
+            const isAdmin = (nameInput === ADMIN_NAME || phoneInput === ADMIN_PHONE);
+
+            if (isAdmin) {
+                paymentSection.style.display = 'none';
+                submitBtn.innerText = "Publish Listing (Admin Free)";
+                submitBtn.className = "w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow mt-2";
+                return;
+            } else {
+                paymentSection.style.display = 'block';
+            }
+
+            let isAlreadyVip = nameInput && vipMembers.includes(nameInput);
 
             if (selectedPlan === 'vip' && !isAlreadyVip) {
                 cardLabel.innerHTML = `<i class="fa-solid fa-credit-card mr-1 text-amber-600"></i> Credit Card ($25 Total: $10 Service Fee + $15 Lifetime VIP)`;
@@ -446,21 +458,17 @@
 
         async function saveProvider(e) {
             e.preventDefault();
-            const selectedPlan = document.querySelector('input[name="plan"]:checked').value;
             const providerName = document.getElementById('pName').value.trim();
+            const providerPhone = document.getElementById('pPhone').value.trim();
             const serviceTitle = document.getElementById('pTitle').value.trim();
-            const adminCode = document.getElementById('adminCodeInput').value.trim();
+            const selectedPlan = document.querySelector('input[name="plan"]:checked').value;
             const submitBtn = document.getElementById('submitBtn');
             const statusMsg = document.getElementById('statusMessage');
 
-            const isAdminFree = (adminCode === "Isaiah24");
+            const isAdmin = (providerName.toLowerCase() === ADMIN_NAME || providerPhone === ADMIN_PHONE);
 
-            let token = { id: "admin_free_bypass" };
-
-            if (!isAdminFree) {
-                const selectedPlan = document.querySelector('input[name="plan"]:checked').value;
+            if (!isAdmin) {
                 const totalFeeText = (selectedPlan === 'vip') ? "$25.00" : "$10.00";
-
                 submitBtn.disabled = true;
                 statusMsg.innerText = "";
                 submitBtn.innerText = `Processing Payment (${totalFeeText})...`;
@@ -473,7 +481,6 @@
                     updateTotalFee();
                     return;
                 }
-                token = stripeRes.token;
             }
 
             const isAlreadyVip = vipMembers.includes(providerName.toLowerCase());
@@ -490,7 +497,7 @@
                 category: document.getElementById('pCategory').value,
                 title: serviceTitle,
                 rate: document.getElementById('pRate').value,
-                phone: document.getElementById('pPhone').value,
+                phone: providerPhone,
                 desc: document.getElementById('pDesc').value,
                 isVip: isVipFinal,
                 lat: parseFloat(document.getElementById('pLat').value) || 39.6137,
@@ -507,8 +514,8 @@
             document.getElementById('providerForm').reset();
             updateTotalFee();
 
-            addNotification(`New Listing Published (Admin Free): "${serviceTitle}" by ${providerName}`);
-            alert("Listing successfully published (Admin Free Bypass)!");
+            addNotification(`New Listing Published: "${serviceTitle}" by ${providerName} (${isAdmin ? 'Admin Free' : 'Paid'})`);
+            alert(isAdmin ? "Admin Listing successfully published for Free!" : "Payment Successful & Listing Published!");
         }
 
         function filterCat(e, cat) {
@@ -565,7 +572,7 @@
         const translations = {
             en: { subtitle: "Local Services Marketplace", search_placeholder: "Search plumbers, security, handymen...", cat_all: "All Services", cat_security: "Home Security", cat_plumbing: "Plumbing", cat_hvac: "Electrical / A/C", cat_appliance: "Appliance Repair", cat_handyman: "Handyman", cat_cleaning: "Home Cleaning", cat_lawn: "Lawn & Yard", cat_towing: "Towing Service", cat_locksmith: "Locksmith", cat_moving: "Moving & Hauling", verified_title: "Verified Nearby Providers", direct_chat: "Direct Chat", nav_home: "Home" },
             my: { subtitle: "ဒေသတွင်း ဝန်ဆောင်မှု ဈေးကွက်", search_placeholder: "ပိုက်ပြင်၊ လုံခြုံရေး၊ လက်သမား ရှာရန်...", cat_all: "ဝန်ဆောင်မှု အားလုံး", cat_security: "အိမ်သုံး လုံခြုံရေး", cat_plumbing: "ရေပိုက်", cat_hvac: "မီး / A/C", cat_appliance: "လျှပ်စစ်ပစ္စည်းပြင်", cat_handyman: "လက်သမား/အထွေထွေ", cat_cleaning: "အိမ်သန့်ရှင်းရေး", cat_lawn: "ခြံသန့်ရှင်းရေး", cat_towing: "ကားပျက်ဆွဲ", cat_locksmith: "သော့ပြင်", cat_moving: "ပစ္စည်းရွှေ့ပြောင်း", verified_title: "အနီးအနားရှိ အတည်ပြုပြီး ဝန်ဆောင်မှုပေးသူများ", direct_chat: "တိုက်ရိုက် စကားပြောရန်", nav_home: "ပင်မ" },
-            es: { subtitle: "Mercado de Servicios Locales", search_placeholder: "Buscar seguridad, gasfiteros...", cat_all: "Todos", cat_security: "Seguridad del Hogar", cat_plumbing: "Fontanería", cat_hvac: "Electricidad", cat_appliance: "Reparación", cat_handyman: "Handyman", cat_cleaning: "Limpieza", cat_lawn: "Jardinería", cat_towing: "Remolque", cat_locksmith: "Cerrajería", cat_moving: "Mudanzas", verified_title: "Proveedores Verificados", direct_chat: "Chat Directo", nav_home: "Inicio" },
+            es: { subtitle: "Mercado de Servicios Locales", search_placeholder: "Buscar seguridad, gasfiteros...", cat_all: "Todos", cat_security: "Seguridad del Hogار", cat_plumbing: "Fontanería", cat_hvac: "Electricidad", cat_appliance: "Reparación", cat_handyman: "Handyman", cat_cleaning: "Limpieza", cat_lawn: "Jardinería", cat_towing: "Remolque", cat_locksmith: "Cerrajería", cat_moving: "Mudanzas", verified_title: "Proveedores Verificados", direct_chat: "Chat Directo", nav_home: "Inicio" },
             hi: { subtitle: "स्थानीय सेवा बाज़ार", search_placeholder: "सुरक्षा, प्लंबर खोजें...", cat_all: "सभी सेवाएं", cat_security: "होम सिक्योरिटी", cat_plumbing: "प्लंबिंग", cat_hvac: "बिजली/एसी", cat_appliance: "उपकरण मरम्मत", cat_handyman: "हैंडीमैन", cat_cleaning: "सफाई", cat_lawn: "लॉन और यार्ड", cat_towing: "टोइंग", cat_locksmith: "ताला चाबी", cat_moving: "मूविंग", verified_title: "सत्यापित नजदीकी सेवा प्रदाता", direct_chat: "सीधा चैट करें", nav_home: "होम" }
         };
 
