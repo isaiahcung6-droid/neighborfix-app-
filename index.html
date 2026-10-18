@@ -250,7 +250,7 @@
         </div>
     </div>
 
-    <!-- Script Logic with Stripe & Google Maps -->
+    <!-- Script Logic -->
     <script>
         // Stripe Setup
         const STRIPE_PUBLISHABLE_KEY = "pk_live_YOUR_ACTUAL_LIVE_KEY_HERE";
@@ -265,20 +265,32 @@
         let currentCategory = 'all';
         let currentChatProvider = '';
 
-        // Admin Config (Secret verification)
+        // Admin Config
         const ADMIN_PHONE = "3173587342";
         const ADMIN_EMAIL = "isaiahcung6@gmail.com";
         const ADMIN_NAME = "isaiah cung";
 
         let providers = JSON.parse(localStorage.getItem('nf_providers')) || [
-            { id: 1, name: "David Miller", category: "security", title: "CCTV & Smart Lock Setup", rate: "$50/hr", lat: 39.6137, lng: -86.1064, rating: "5.0", phone: "1234567894", desc: "Expert setup for Ring cameras, CCTV security systems, smart video doorbells, and electronic locks.", isVip: true, img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80" },
-            { id: 2, name: "Carlos Rodriguez", category: "plumbing", title: "Plumbing & Pipe Repair", rate: "$35/hr", lat: 39.6137, lng: -86.1064, rating: "4.9", phone: "1234567890", desc: "Experienced local plumber available for quick emergency fixes, pipe replacements, and drain cleaning.", isVip: true, img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" },
-            { id: 3, name: "Daw Khin Aye", category: "cleaning", title: "Home & Deep Cleaning", rate: "$25/hr", lat: 39.6237, lng: -86.1164, rating: "5.0", phone: "1234567891", desc: "Friendly house cleaning services, kitchen & bathroom deep cleans with eco-friendly products.", isVip: false, img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80" },
-            { id: 4, name: "John Smith", category: "appliance", title: "Washing Machine & Fridge Repair", rate: "$45/hr", lat: 39.6337, lng: -86.0964, rating: "4.8", phone: "1234567892", desc: "Expert appliance repair technician for washing machines, refrigerators, dryers, and microwaves.", isVip: false, img: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&q=80" }
+            { id: 1, name: "David Miller", category: "security", title: "CCTV & Smart Lock Setup", rate: "$50/hr", lat: 39.6137, lng: -86.1064, rating: "5.0", phone: "1234567894", desc: "Expert setup for Ring cameras, CCTV security systems, smart video doorbells, and electronic locks.", isVip: true, active: true, img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80" },
+            { id: 2, name: "Carlos Rodriguez", category: "plumbing", title: "Plumbing & Pipe Repair", rate: "$35/hr", lat: 39.6137, lng: -86.1064, rating: "4.9", phone: "1234567890", desc: "Experienced local plumber available for quick emergency fixes, pipe replacements, and drain cleaning.", isVip: true, active: true, img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" },
+            { id: 3, name: "Daw Khin Aye", category: "cleaning", title: "Home & Deep Cleaning", rate: "$25/hr", lat: 39.6237, lng: -86.1164, rating: "5.0", phone: "1234567891", desc: "Friendly house cleaning services, kitchen & bathroom deep cleans with eco-friendly products.", isVip: false, active: true, img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80" }
         ];
 
         let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || [];
         let notifications = JSON.parse(localStorage.getItem('nf_notifications')) || [];
+
+        function toggleStatus(id) {
+            providers = providers.map(p => {
+                if (p.id === id) {
+                    const newStatus = !p.active;
+                    addNotification(`Listing status updated for "${p.title}": ${newStatus ? 'Re-activated' : 'Deactivated'}`);
+                    return { ...p, active: newStatus };
+                }
+                return p;
+            });
+            localStorage.setItem('nf_providers', JSON.stringify(providers));
+            filterProviders();
+        }
 
         function addNotification(text) {
             console.log(`Alert targeted to SMS: ${ADMIN_PHONE} & Email: ${ADMIN_EMAIL}`);
@@ -336,7 +348,6 @@
             const cardLabel = document.getElementById('cardLabel');
             const paymentSection = document.getElementById('paymentSectionContainer');
 
-            // Automatically detect if Admin is posting
             const isAdmin = (nameInput === ADMIN_NAME || phoneInput === ADMIN_PHONE);
 
             if (isAdmin) {
@@ -403,14 +414,16 @@
 
             container.innerHTML = sortedList.map(p => {
                 const distanceStr = (userLat && userLng) ? calculateDistance(userLat, userLng, p.lat, p.lng) : "0.8 mi";
+                const isInactive = (p.active === false);
+
                 return `
-                <div class="provider-card bg-white border ${p.isVip ? 'border-amber-300 ring-1 ring-amber-200' : 'border-slate-100'} rounded-2xl p-4 shadow-sm relative">
+                <div class="provider-card bg-white border ${p.isVip ? 'border-amber-300 ring-1 ring-amber-200' : 'border-slate-100'} rounded-2xl p-4 shadow-sm relative ${isInactive ? 'opacity-50 grayscale' : ''}">
                     ${p.isVip ? '<span class="absolute -top-2.5 right-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-sm"><i class="fa-solid fa-crown mr-1"></i> VIP Featured</span>' : ''}
                     <div class="flex items-start justify-between">
                         <div class="flex space-x-3">
                             <img src="${p.img}" alt="${p.name}" class="w-14 h-14 rounded-2xl object-cover shadow-sm">
                             <div>
-                                <h3 class="font-bold text-slate-900">${p.name}</h3>
+                                <h3 class="font-bold text-slate-900">${p.name} ${isInactive ? '<span class="text-rose-500 text-[10px]">(Paused)</span>' : ''}</h3>
                                 <p class="text-xs text-emerald-600 font-semibold mt-0.5">${p.title}</p>
                                 <div class="flex items-center space-x-2 mt-1.5 text-xs text-slate-500">
                                     <span class="text-amber-500 font-bold flex items-center"><i class="fa-solid fa-star mr-1"></i> ${p.rating}</span>
@@ -424,14 +437,20 @@
                         <span class="bg-emerald-50 text-emerald-700 font-bold text-xs px-2.5 py-1 rounded-lg">${p.rate}</span>
                     </div>
                     <p class="text-xs text-slate-600 mt-3 leading-relaxed">${p.desc}</p>
+                    
                     <div class="flex space-x-2 mt-4">
-                        <button onclick="openChat('${p.name}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 shadow-sm shadow-emerald-100">
+                        <button onclick="openChat('${p.name}')" ${isInactive ? 'disabled' : ''} class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 shadow-sm shadow-emerald-100 disabled:bg-slate-300">
                             <i class="fa-regular fa-comment-dots"></i>
                             <span>${chatText}</span>
                         </button>
-                        <a href="tel:${p.phone}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center justify-center">
+                        <a href="${isInactive ? '#' : 'tel:' + p.phone}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center justify-center">
                             <i class="fa-solid fa-phone"></i>
                         </a>
+                        
+                        <!-- Toggle Re-activate / Deactivate Button -->
+                        <button onclick="toggleStatus(${p.id})" class="px-3 py-2.5 rounded-xl text-xs font-bold ${isInactive ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-rose-100 text-rose-700 hover:bg-rose-200'} transition">
+                            <i class="fa-solid ${isInactive ? 'fa-user-check' : 'fa-user-slash'}"></i>
+                        </button>
                     </div>
                 </div>
             `}).join('');
@@ -500,6 +519,7 @@
                 phone: providerPhone,
                 desc: document.getElementById('pDesc').value,
                 isVip: isVipFinal,
+                active: true,
                 lat: parseFloat(document.getElementById('pLat').value) || 39.6137,
                 lng: parseFloat(document.getElementById('pLng').value) || -86.1064,
                 rating: "5.0",
@@ -572,7 +592,7 @@
         const translations = {
             en: { subtitle: "Local Services Marketplace", search_placeholder: "Search plumbers, security, handymen...", cat_all: "All Services", cat_security: "Home Security", cat_plumbing: "Plumbing", cat_hvac: "Electrical / A/C", cat_appliance: "Appliance Repair", cat_handyman: "Handyman", cat_cleaning: "Home Cleaning", cat_lawn: "Lawn & Yard", cat_towing: "Towing Service", cat_locksmith: "Locksmith", cat_moving: "Moving & Hauling", verified_title: "Verified Nearby Providers", direct_chat: "Direct Chat", nav_home: "Home" },
             my: { subtitle: "ဒေသတွင်း ဝန်ဆောင်မှု ဈေးကွက်", search_placeholder: "ပိုက်ပြင်၊ လုံခြုံရေး၊ လက်သမား ရှာရန်...", cat_all: "ဝန်ဆောင်မှု အားလုံး", cat_security: "အိမ်သုံး လုံခြုံရေး", cat_plumbing: "ရေပိုက်", cat_hvac: "မီး / A/C", cat_appliance: "လျှပ်စစ်ပစ္စည်းပြင်", cat_handyman: "လက်သမား/အထွေထွေ", cat_cleaning: "အိမ်သန့်ရှင်းရေး", cat_lawn: "ခြံသန့်ရှင်းရေး", cat_towing: "ကားပျက်ဆွဲ", cat_locksmith: "သော့ပြင်", cat_moving: "ပစ္စည်းရွှေ့ပြောင်း", verified_title: "အနီးအနားရှိ အတည်ပြုပြီး ဝန်ဆောင်မှုပေးသူများ", direct_chat: "တိုက်ရိုက် စကားပြောရန်", nav_home: "ပင်မ" },
-            es: { subtitle: "Mercado de Servicios Locales", search_placeholder: "Buscar seguridad, gasfiteros...", cat_all: "Todos", cat_security: "Seguridad del Hogار", cat_plumbing: "Fontanería", cat_hvac: "Electricidad", cat_appliance: "Reparación", cat_handyman: "Handyman", cat_cleaning: "Limpieza", cat_lawn: "Jardinería", cat_towing: "Remolque", cat_locksmith: "Cerrajería", cat_moving: "Mudanzas", verified_title: "Proveedores Verificados", direct_chat: "Chat Directo", nav_home: "Inicio" },
+            es: { subtitle: "Mercado de Servicios Locales", search_placeholder: "Buscar seguridad, gasfiteros...", cat_all: "Todos", cat_security: "Seguridad del Hogar", cat_plumbing: "Fontanería", cat_hvac: "Electricidad", cat_appliance: "Reparación", cat_handyman: "Handyman", cat_cleaning: "Limpieza", cat_lawn: "Jardinería", cat_towing: "Remolque", cat_locksmith: "Cerrajería", cat_moving: "Mudanzas", verified_title: "Proveedores Verificados", direct_chat: "Chat Directo", nav_home: "Inicio" },
             hi: { subtitle: "स्थानीय सेवा बाज़ार", search_placeholder: "सुरक्षा, प्लंबर खोजें...", cat_all: "सभी सेवाएं", cat_security: "होम सिक्योरिटी", cat_plumbing: "प्लंबिंग", cat_hvac: "बिजली/एसी", cat_appliance: "उपकरण मरम्मत", cat_handyman: "हैंडीमैन", cat_cleaning: "सफाई", cat_lawn: "लॉन और यार्ड", cat_towing: "टोइंग", cat_locksmith: "ताला चाबी", cat_moving: "मूविंग", verified_title: "सत्यापित नजदीकी सेवा प्रदाता", direct_chat: "सीधा चैट करें", nav_home: "होम" }
         };
 
