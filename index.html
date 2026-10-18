@@ -262,7 +262,7 @@
     <div id="notificationModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-4 shadow-2xl max-h-[80vh] flex flex-col">
             <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
-                <h3 class="font-bold text-slate-900 text-sm flex items-center"><i class="fa-solid fa-bell text-emerald-600 mr-2"></i> Notifications & Alerts</h3>
+                <h3 class="font-bold text-slate-900 text-sm flex items-center"><i class="fa-solid fa-bell text-emerald-600 mr-2"></i> My Notifications</h3>
                 <button onclick="closeNotificationModal()" class="text-slate-400 hover:text-slate-600 text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="notificationList" class="flex-1 overflow-y-auto space-y-2 text-xs py-1">
@@ -301,35 +301,29 @@
 
         let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || ["isaiah cung"];
         let notifications = JSON.parse(localStorage.getItem('nf_notifications')) || [];
-        
-        // Persistent Chat History Storage
         let chatHistories = JSON.parse(localStorage.getItem('nf_chat_histories')) || {};
 
-        function previewImage(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const imgBase64 = e.target.result;
-                    document.getElementById('profilePreview').src = imgBase64;
-                    document.getElementById('pImgData').value = imgBase64;
-                };
-                reader.readAsDataURL(file);
+        // Filter notifications to show ONLY those related to the current provider being chatted with or user's own activity
+        function addNotification(providerName, text) {
+            if (!notifications[providerName]) {
+                notifications[providerName] = [];
             }
-        }
-
-        function addNotification(text) {
-            console.log(`Alert targeted to SMS: ${ADMIN_PHONE} & Email: ${ADMIN_EMAIL}`);
-            notifications.unshift({ id: Date.now(), text: text, time: "Just now", unread: true });
+            notifications[providerName].unshift({ id: Date.now(), text: text, time: "Just now", unread: true });
             localStorage.setItem('nf_notifications', JSON.stringify(notifications));
             updateNotifBadge();
         }
 
         function updateNotifBadge() {
-            const unreadCount = notifications.filter(n => n.unread).length;
+            let totalUnread = 0;
+            Object.keys(notifications).forEach(provider => {
+                if (notifications[provider]) {
+                    totalUnread += notifications[provider].filter(n => n.unread).length;
+                }
+            });
+
             const badge = document.getElementById('notifBadge');
-            if (unreadCount > 0) {
-                badge.innerText = unreadCount;
+            if (totalUnread > 0) {
+                badge.innerText = totalUnread;
                 badge.classList.remove('hidden');
             } else {
                 badge.classList.add('hidden');
@@ -337,15 +331,23 @@
         }
 
         function openNotificationModal() {
-            notifications.forEach(n => n.unread = false);
+            const listContainer = document.getElementById('notificationList');
+            const providerNotifs = (currentChatProvider && notifications[currentChatProvider]) ? notifications[currentChatProvider] : [];
+
+            providerNotifs.forEach(n => n.unread = false);
             localStorage.setItem('nf_notifications', JSON.stringify(notifications));
             updateNotifBadge();
 
-            const listContainer = document.getElementById('notificationList');
-            if (notifications.length === 0) {
-                listContainer.innerHTML = '<p class="text-xs text-center text-slate-400 py-6">No notifications yet.</p>';
+            if (!currentChatProvider) {
+                listContainer.innerHTML = '<p class="text-xs text-center text-slate-400 py-6">Please open a specific provider chat to view related notifications.</p>';
+                document.getElementById('notificationModal').classList.remove('hidden');
+                return;
+            }
+
+            if (providerNotifs.length === 0) {
+                listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-6">No notifications for ${currentChatProvider}.</p>`;
             } else {
-                listContainer.innerHTML = notifications.map(n => `
+                listContainer.innerHTML = providerNotifs.map(n => `
                     <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col space-y-1">
                         <p class="text-slate-800 font-medium">${n.text}</p>
                         <span class="text-[10px] text-slate-400">${n.time}</span>
@@ -360,10 +362,25 @@
         }
 
         function clearNotifications() {
-            notifications = [];
-            localStorage.setItem('nf_notifications', JSON.stringify(notifications));
-            openNotificationModal();
-            updateNotifBadge();
+            if (currentChatProvider) {
+                notifications[currentChatProvider] = [];
+                localStorage.setItem('nf_notifications', JSON.stringify(notifications));
+                openNotificationModal();
+                updateNotifBadge();
+            }
+        }
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imgBase64 = e.target.result;
+                    document.getElementById('profilePreview').src = imgBase64;
+                    document.getElementById('pImgData').value = imgBase64;
+                };
+                reader.readAsDataURL(file);
+            }
         }
 
         function updateTotalFee() {
@@ -424,7 +441,7 @@
 
             providers = providers.map(p => {
                 if ((p.name.toLowerCase() === nameInput || p.phone === phoneInput) && p.active === false) {
-                    addNotification(`Account Reactivated for: ${p.name}`);
+                    addNotification(p.name, `Account Reactivated Successfully`);
                     return { ...p, active: true };
                 }
                 return p;
@@ -630,7 +647,7 @@
                 filterProviders();
                 closePostModal();
                 alert("Profile & Uploaded Photo successfully updated!");
-                addNotification(`Listing updated by ${providerName}`);
+                addNotification(providerName, `Listing successfully updated`);
             } else {
                 const isAlreadyVip = vipMembers.includes(providerName.toLowerCase());
                 let isVipFinal = isAlreadyVip || selectedPlan === 'vip';
@@ -664,7 +681,7 @@
                 document.getElementById('providerForm').reset();
                 updateTotalFee();
 
-                addNotification(`New Listing Published: "${serviceTitle}" by ${providerName} (${isAdmin ? 'Admin Free' : 'Paid'})`);
+                addNotification(providerName, `New Listing Published: "${serviceTitle}"`);
                 alert(isAdmin ? "Admin Listing successfully published for Free!" : "Payment Successful & Listing Published!");
             }
         }
@@ -691,14 +708,11 @@
             renderProviders(filtered);
         }
 
-        // Persistent Chat Logic
+        // Persistent Chat Logic with Isolated Notifications per Provider
         function openChat(name) {
             currentChatProvider = name;
             document.getElementById('chatTitle').innerText = "Chat with " + name;
             
-            const msgBox = document.getElementById('chatMessages');
-            
-            // Load saved messages for this specific provider
             if (!chatHistories[name]) {
                 chatHistories[name] = [
                     { sender: 'provider', text: "Hello! Thanks for reaching out. How can I help you today?" }
@@ -735,21 +749,21 @@
                 chatHistories[currentChatProvider] = [];
             }
             
-            // Push user message
             chatHistories[currentChatProvider].push({ sender: 'user', text: msgText });
             localStorage.setItem('nf_chat_histories', JSON.stringify(chatHistories));
             
             input.value = '';
             renderChatMessages();
 
-            addNotification(`New message regarding ${currentChatProvider}: "${msgText}"`);
+            // Add notification specific only to this active provider chat
+            addNotification(currentChatProvider, `New message sent: "${msgText}"`);
         }
 
         const translations = {
             en: { subtitle: "Local Services Marketplace", search_placeholder: "Search plumbers, security, handymen...", cat_all: "All Services", cat_security: "Home Security", cat_plumbing: "Plumbing", cat_hvac: "Electrical / A/C", cat_appliance: "Appliance Repair", cat_handyman: "Handyman", cat_cleaning: "Home Cleaning", cat_lawn: "Lawn & Yard", cat_towing: "Towing Service", cat_locksmith: "Locksmith", cat_moving: "Moving & Hauling", verified_title: "Verified Nearby Providers", direct_chat: "Direct Chat", nav_home: "Home" },
             my: { subtitle: "ဒေသတွင်း ဝန်ဆောင်မှု ဈေးကွက်", search_placeholder: "ပိုက်ပြင်၊ လုံခြုံရေး၊ လက်သမား ရှာရန်...", cat_all: "ဝန်ဆောင်မှု အားလုံး", cat_security: "အိမ်သုံး လုံခြုံရေး", cat_plumbing: "ရေပိုက်", cat_hvac: "မီး / A/C", cat_appliance: "လျှပ်စစ်ပစ္စည်းပြင်", cat_handyman: "လက်သမား/အထွေထွေ", cat_cleaning: "အိမ်သန့်ရှင်းရေး", cat_lawn: "ခြံသန့်ရှင်းရေး", cat_towing: "ကားပျက်ဆွဲ", cat_locksmith: "သော့ပြင်", cat_moving: "ပစ္စည်းရွှေ့ပြောင်း", verified_title: "အနီးအနားရှိ အတည်ပြုပြီး ဝန်ဆောင်မှုပေးသူများ", direct_chat: "တိုက်ရိုက် စကားပြောရန်", nav_home: "ပင်မ" },
             es: { subtitle: "Mercado de Servicios Locales", search_placeholder: "Buscar seguridad, gasfiteros...", cat_all: "Todos", cat_security: "Seguridad del Hogar", cat_plumbing: "Fontanería", cat_hvac: "Electricidad", cat_appliance: "Reparación", cat_handyman: "Handyman", cat_cleaning: "Limpieza", cat_lawn: "Jardinería", cat_towing: "Remolque", cat_locksmith: "Cerrajería", cat_moving: "Mudanzas", verified_title: "Proveedores Verificados", direct_chat: "Chat Directo", nav_home: "Inicio" },
-            hi: { subtitle: "स्थानीय सेवा बाज़ार", search_placeholder: "सुरक्षा, प्लंबर खोजें...", cat_all: "सभी सेवाएं", cat_security: "होम सिक्योरिटी", cat_plumbing: "प्लंबिंग", cat_hvac: "बिजली/एसी", cat_appliance: "उपकरण मरम्मत", cat_handyman: "हैंडीमैन", cat_cleaning: "सफाई", cat_lawn: "लॉन और यार्ड", cat_towing: "टोइंग", cat_locksmith: "ताला चाबी", cat_moving: "मूविंग", verified_title: "सत्यापित नजदीकी सेवा प्रदाता", direct_chat: "सीधा चैट करें", nav_home: "होम" }
+            hi: { subtitle: "स्थानीय सेवा बाज़ार", search_placeholder: "सुरक्षा, प्लंबर खोजें...", cat_all: "सभी सेवाएं", cat_security: "होम सिक्योरिटी", cat_plumbing: "प्लंबिंग", cat_hvac: "बिजली/एसी", cat_appliance: "उपकरण मरम्मत", cat_handyman: "हैंडीमैन", cat_cleaning: "सफाई", cat_lawn: "लॉन और यार", cat_towing: "टोइंग", cat_locksmith: "ताला चाबी", cat_moving: "मूविंग", verified_title: "सत्यापित नजदीकी सेवा प्रदाता", direct_chat: "सीधा चैट करें", nav_home: "होम" }
         };
 
         function changeLanguage(lang) {
