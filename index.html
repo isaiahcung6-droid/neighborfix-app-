@@ -65,7 +65,7 @@
             <input type="text" id="searchInput" onkeyup="filterProviders()" placeholder="Search music class, guitar, sound engineering..." data-i18n-placeholder="search_placeholder" class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm">
         </div>
 
-        <!-- Categories Options (Including Music Classes & Sound) -->
+        <!-- Categories Options -->
         <div class="flex space-x-2 overflow-x-auto pb-2 mb-5 no-scrollbar">
             <button onclick="filterCat(event, 'all')" class="cat-btn active bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm shadow-emerald-200 transition" data-i18n="cat_all">All Services</button>
             <button onclick="filterCat(event, 'music_class')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition"><i class="fa-solid fa-music text-emerald-600 mr-1"></i> Music Classes</button>
@@ -342,9 +342,13 @@
         const ADMIN_EMAIL = "isaiahcung6@gmail.com";
         const ADMIN_NAME = "isaiah cung";
 
-        if (!localStorage.getItem('nf_v10_cleaned')) {
+        // Forced clean key to reset legacy local storage
+        if (!localStorage.getItem('nf_v11_cleaned')) {
             localStorage.removeItem('nf_providers');
-            localStorage.setItem('nf_v10_cleaned', 'true');
+            localStorage.removeItem('nf_vip_members');
+            localStorage.removeItem('nf_paid_job_leads');
+            localStorage.removeItem('nf_notifications');
+            localStorage.setItem('nf_v11_cleaned', 'true');
         }
 
         let realOnlyDefault = [
@@ -355,7 +359,7 @@
         ];
 
         let loadedProviders = JSON.parse(localStorage.getItem('nf_providers'));
-        if (!loadedProviders || loadedProviders.length <= 2) {
+        if (!loadedProviders || loadedProviders.length === 0) {
             loadedProviders = realOnlyDefault;
             localStorage.setItem('nf_providers', JSON.stringify(realOnlyDefault));
         }
