@@ -296,7 +296,7 @@
         </div>
     </div>
 
-    <!-- Provider Fee Confirmation Modal ($10 Standard / $8 Lifetime VIP) -->
+    <!-- Provider Fee Confirmation Modal -->
     <div id="confirmFeeModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl text-center">
             <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">
@@ -362,8 +362,8 @@
 
         try {
             if (typeof Stripe !== 'undefined') {
-                const STRIPE_PUBLISHABLE_KEY = "pk_live_YOUR_ACTUAL_LIVE_KEY_HERE";
-                stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+                const STRIPE_LIVE_PUBLISHABLE_KEY = "pk_live_YOUR_ACTUAL_LIVE_KEY_HERE";
+                stripe = Stripe(STRIPE_LIVE_PUBLISHABLE_KEY);
                 const elements = stripe.elements();
                 cardElement = elements.create('card');
                 providerCardElement = elements.create('card');
@@ -400,11 +400,14 @@
 
         window.deleteAccountData = function() {
             if (confirm("Are you sure you want to delete all account data and cloud listings?")) {
-                if (db) set(ref(db, 'global_providers'), null);
+                if (db) {
+                    set(ref(db, 'global_providers'), null);
+                    set(ref(db, 'chats'), null);
+                }
                 localStorage.clear();
                 providers = [];
                 filterProviders();
-                alert("Account data and global listings successfully wiped.");
+                alert("Account data, chats, and global listings successfully wiped.");
                 location.reload();
             }
         };
@@ -808,7 +811,6 @@
             document.getElementById('chatModal').classList.add('hidden'); 
         };
 
-        // Fee logic: $8 for VIP, $10 for Standard, Free Bypass for Admin
         window.initiateBookingAccept = function(msgKey) {
             pendingBookingMessageKey = msgKey;
             const isAdmin = ADMIN_LIST.includes(currentChatProvider.toLowerCase());
@@ -839,7 +841,7 @@
         window.processProviderFeeAndConfirm = async function(isBypass = false) {
             const btn = document.getElementById('payConfirmBtn');
             btn.disabled = true;
-            btn.innerText = "Processing...";
+            btn.innerText = "Processing Live Payment...";
 
             if (!isBypass && stripe && providerCardElement) {
                 const res = await stripe.createToken(providerCardElement, { name: currentChatProvider });
@@ -862,7 +864,7 @@
             btn.disabled = false;
             btn.innerText = "Confirm & Accept";
             closeFeeModal();
-            alert(isBypass ? "Admin Booking Approved (Fee Bypassed)!" : "Booking Confirmed & Fee Successfully Paid!");
+            alert(isBypass ? "Admin Booking Approved (Fee Bypassed)!" : "Live Payment Successful & Booking Confirmed!");
         };
 
         window.cancelBookingRequest = function(msgKey) {
@@ -894,7 +896,7 @@
                 card.className = "w-full bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 shadow-sm text-slate-800";
                 
                 const providerObj = providers.find(p => p.name.toLowerCase() === currentChatProvider.toLowerCase());
-                const phoneStr = providerObj ? providerObj.phone : "Hidden until confirmed";
+                const phoneStr = (m.status === 'accepted') ? (providerObj ? providerObj.phone : "Contact available") : "Hidden until confirmed";
 
                 let statusBadge = `<span class="bg-amber-200 text-amber-900 text-[10px] font-bold px-2.5 py-1 rounded-full">Pending Response</span>`;
                 if (m.status === 'accepted') statusBadge = `<span class="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-circle-check mr-1"></i> Booking Confirmed</span>`;
@@ -916,7 +918,11 @@
                             <p class="text-[11px] font-bold text-emerald-900 mb-1"><i class="fa-solid fa-phone mr-1"></i> Provider Contact Unlocked:</p>
                             <a href="tel:${phoneStr}" class="text-xs font-extrabold text-emerald-700 underline">${phoneStr}</a>
                         </div>
-                    ` : ''}
+                    ` : `
+                        <div class="bg-slate-100 border border-slate-200 rounded-xl p-2 text-center text-[11px] text-slate-500">
+                            <i class="fa-solid fa-lock mr-1"></i> Contact hidden until accepted
+                        </div>
+                    `}
 
                     ${m.status === 'pending' ? `
                         <div class="flex space-x-2 pt-2 mt-2 border-t border-amber-200/60">
