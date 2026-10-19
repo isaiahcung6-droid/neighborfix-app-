@@ -93,7 +93,7 @@
         <!-- Provider Cards Container -->
         <div id="providerList" class="space-y-4"></div>
 
-        <!-- Delete Account Option Section -->
+        <!-- Danger Zone -->
         <div class="mt-8 bg-rose-50 border border-rose-200 rounded-2xl p-4 text-center">
             <h3 class="font-bold text-rose-900 text-xs mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Danger Zone</h3>
             <p class="text-[11px] text-rose-700 mb-3">Permanently delete your account data and reset local listings.</p>
@@ -138,7 +138,6 @@
             <form id="providerForm" onsubmit="saveProvider(event)" class="space-y-3">
                 <input type="hidden" id="editProviderId">
 
-                <!-- Account Status / Promotion Selection (Standard vs Lifetime VIP) -->
                 <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-2" id="planSection">
                     <label class="block text-xs font-bold text-amber-900 mb-1">Account Status / Promotion</label>
                     <div class="grid grid-cols-2 gap-2 mt-2">
@@ -160,7 +159,6 @@
                     <input type="text" id="pName" required onkeyup="updateListingFeeUI()" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                 </div>
 
-                <!-- Profile Photo Upload Field -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Upload Profile Photo</label>
                     <div class="flex items-center space-x-3 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
@@ -193,12 +191,12 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Service Title (e.g. HVAC Heater Repair & Installation)</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Service Title</label>
                     <input type="text" id="pTitle" required class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                 </div>
                 <div class="flex space-x-2">
                     <div class="w-1/2">
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Rate (e.g. Hourly / Project)</label>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Rate</label>
                         <input type="text" id="pRate" required placeholder="Contact for rate" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                     </div>
                     <div class="w-1/2">
@@ -207,7 +205,6 @@
                     </div>
                 </div>
 
-                <!-- GPS Location Capture Button -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">GPS Location Pin</label>
                     <button type="button" onclick="capturePostLocation()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs border border-slate-300 flex items-center justify-center space-x-1.5 cursor-pointer">
@@ -223,14 +220,12 @@
                     <textarea id="pDesc" rows="3" required class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
                 </div>
 
-                <!-- Secure Stripe Card Section (Only shown if upgrading to VIP) -->
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 mt-2 hidden" id="paymentSectionContainer">
                     <label class="block text-xs font-bold text-slate-700 mb-1.5"><i class="fa-solid fa-credit-card mr-1 text-amber-600"></i> Lifetime VIP Upgrade</label>
                     <div id="card-element" class="bg-white p-3 rounded-lg border border-slate-200"></div>
                 </div>
 
                 <button type="submit" id="submitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow mt-2 cursor-pointer">Publish Listing</button>
-                <div id="statusMessage" class="text-xs text-center mt-2 font-medium"></div>
             </form>
         </div>
     </div>
@@ -252,15 +247,15 @@
         </div>
     </div>
 
-    <!-- Direct Booking & Request Modal (No Direct Call/Send to Prevent Bypass) -->
+    <!-- Direct Booking Request Modal (With Optional Note) -->
     <div id="chatModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-4 shadow-2xl">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-3">
-                <h3 id="chatTitle" class="font-bold text-slate-900 text-base">Direct Booking & Request</h3>
+                <h3 id="chatTitle" class="font-bold text-slate-900 text-base">Direct Booking</h3>
                 <button onclick="closeChat()" class="text-slate-400 hover:text-slate-600 text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
-            <!-- Booking Date & Time Selector Drawer -->
+            <!-- Booking Date & Time & Note Selector Drawer -->
             <div id="bookingDrawer" class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 mb-3 hidden">
                 <h4 class="font-bold text-emerald-900 text-xs mb-2 flex items-center"><i class="fa-regular fa-calendar-check text-emerald-600 mr-1.5"></i> Select Booking Date & Time</h4>
                 <div class="grid grid-cols-2 gap-2 mb-2">
@@ -273,15 +268,19 @@
                         <input type="time" id="bookingTimeInput" class="w-full bg-white border border-emerald-200 rounded-xl p-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                     </div>
                 </div>
+                <div class="mb-2">
+                    <label class="block text-[10px] font-semibold text-emerald-800 mb-1">Optional Note / Job Details</label>
+                    <input type="text" id="bookingNoteInput" placeholder="e.g. Need help urgently this afternoon..." class="w-full bg-white border border-emerald-200 rounded-xl p-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
                 <button onclick="sendBookingRequest()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs shadow-sm shadow-emerald-200 flex items-center justify-center cursor-pointer">
                     <i class="fa-solid fa-paper-plane mr-1.5"></i> Submit Booking Request
                 </button>
             </div>
 
-            <!-- Chat Messages / Booking Activity Container -->
+            <!-- Booking Cards Area -->
             <div id="chatMessages" class="h-64 overflow-y-auto bg-slate-50/80 rounded-2xl p-3 mb-3 space-y-3"></div>
 
-            <!-- Action Area - Booking Request Only -->
+            <!-- Request Action Button -->
             <div id="chatInputArea" class="flex flex-col space-y-2">
                 <button onclick="toggleBookingDrawer()" class="w-full bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-2xl text-xs font-bold shadow-md flex items-center justify-center space-x-2 cursor-pointer">
                     <i class="fa-regular fa-calendar-plus text-sm"></i>
@@ -291,7 +290,7 @@
         </div>
     </div>
 
-    <!-- Provider Fee Confirmation Modal (Triggered on Provider Accept) -->
+    <!-- Provider Fee Confirmation Modal -->
     <div id="confirmFeeModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl text-center">
             <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">
@@ -328,7 +327,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, onChildAdded, update, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // 🔔 Notification Sound Effect Setup
         const notifSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
         const firebaseConfig = {
@@ -375,14 +373,12 @@
         let currentChatProvider = '';
         let pendingBookingMessageKey = null;
 
-        // ADMIN LISTING (Bypass Fee & Always VIP)
         const ADMIN_LIST = ["isaiah cung", "rising star music studio"];
         
         let providers = [];
         let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || ADMIN_LIST;
         let notifications = JSON.parse(localStorage.getItem('nf_notifications')) || {};
 
-        // Realtime Global Sync from Cloud Database
         if (db) {
             const cloudProvidersRef = ref(db, 'global_providers');
             onValue(cloudProvidersRef, (snapshot) => {
@@ -415,7 +411,6 @@
             localStorage.setItem('nf_notifications', JSON.stringify(notifications));
             updateNotifBadge();
 
-            // 🔔 Play notification sound
             notifSound.play().catch(err => {
                 console.log("Audio play allowed after user interaction:", err);
             });
@@ -579,7 +574,6 @@
                     <p class="text-xs text-slate-600 mt-3 leading-relaxed">${p.desc}</p>
                     
                     <div class="flex space-x-2 mt-4">
-                        <!-- Direct Booking Button (Prevents Direct Unpaid Phone Bypass) -->
                         <button onclick="openChat('${p.name}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 shadow-sm shadow-emerald-100 cursor-pointer">
                             <i class="fa-regular fa-calendar-check"></i>
                             <span>Request Booking</span>
@@ -682,7 +676,6 @@
                     rating: "5.0"
                 };
 
-                // Sync directly to Cloud Realtime Database
                 if (db) {
                     set(ref(db, 'global_providers/' + providerId), newProvider);
                 }
@@ -718,10 +711,10 @@
             renderProviders(filtered);
         };
 
-        // Open Booking Modal
+        // Open Direct Booking Modal
         window.openChat = function(name) {
             currentChatProvider = name;
-            document.getElementById('chatTitle').innerText = "Direct Booking - " + name;
+            document.getElementById('chatTitle').innerText = "Direct Booking – " + name;
             const msgBox = document.getElementById('chatMessages');
             msgBox.innerHTML = '';
             document.getElementById('bookingDrawer').classList.add('hidden');
@@ -743,6 +736,7 @@
         window.sendBookingRequest = function() {
             const dateVal = document.getElementById('bookingDateInput').value;
             const timeVal = document.getElementById('bookingTimeInput').value;
+            const noteVal = document.getElementById('bookingNoteInput').value.trim();
 
             if (!dateVal || !timeVal) {
                 alert("Please select both Date and Time for your booking request.");
@@ -759,11 +753,16 @@
                 type: 'booking_request',
                 date: dateVal,
                 time: timeVal,
-                status: 'pending', // pending, accepted, cancelled
+                note: noteVal || "No additional notes",
+                status: 'pending',
                 timestamp: Date.now()
             });
 
+            document.getElementById('bookingDateInput').value = '';
+            document.getElementById('bookingTimeInput').value = '';
+            document.getElementById('bookingNoteInput').value = '';
             document.getElementById('bookingDrawer').classList.add('hidden');
+            
             addNotification(currentChatProvider, `New Booking Request sent for ${dateVal} at ${timeVal}`);
             alert("Booking request sent successfully!");
         };
@@ -787,7 +786,6 @@
             pendingBookingMessageKey = msgKey;
             const isAdmin = ADMIN_LIST.includes(currentChatProvider.toLowerCase());
 
-            // If Provider is Admin, BYPASS Fee completely
             if (isAdmin) {
                 processProviderFeeAndConfirm(true);
             } else {
@@ -842,7 +840,7 @@
             }
         };
 
-        // Render Booking Request Card UI (Unlocks Phone Only When Confirmed)
+        // Render Booking Request Card UI with Note Support
         function appendMessageToUI(m, msgKey) {
             const msgBox = document.getElementById('chatMessages');
             const wrapperDiv = document.createElement('div');
@@ -867,6 +865,7 @@
                     <div class="space-y-1.5 mb-3 text-xs font-semibold text-slate-700">
                         <p class="flex items-center"><i class="fa-regular fa-calendar text-emerald-600 w-5 text-sm"></i> Date: <span class="ml-1 font-bold text-slate-900">${m.date}</span></p>
                         <p class="flex items-center"><i class="fa-regular fa-clock text-emerald-600 w-5 text-sm"></i> Time: <span class="ml-1 font-bold text-slate-900">${m.time}</span></p>
+                        <p class="flex items-start mt-1"><i class="fa-regular fa-note-sticky text-emerald-600 w-5 text-sm mt-0.5"></i> Note: <span class="ml-1 font-medium text-slate-800">${m.note || 'None'}</span></p>
                     </div>
 
                     ${m.status === 'accepted' ? `
