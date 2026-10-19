@@ -360,6 +360,13 @@
         let cardMounted = false;
         let providerCardMounted = false;
 
+        // Unique User Device Session ID generation to isolate chats across different phones
+        let deviceSessionId = localStorage.getItem('nf_device_session');
+        if (!deviceSessionId) {
+            deviceSessionId = 'device_' + Math.random().toString(36).substring(2, 9);
+            localStorage.setItem('nf_device_session', deviceSessionId);
+        }
+
         try {
             if (typeof Stripe !== 'undefined') {
                 const STRIPE_LIVE_PUBLISHABLE_KEY = "pk_live_YOUR_ACTUAL_LIVE_KEY_HERE";
@@ -377,6 +384,7 @@
         let userLng = null;
         let currentCategory = 'all';
         let currentChatProvider = '';
+        let currentChatId = '';
         let pendingBookingMessageKey = null;
 
         const ADMIN_LIST = ["isaiah cung", "rising star music studio"];
@@ -736,8 +744,11 @@
                 off(activeChatRef);
             }
 
-            const chatId = name.replace(/\s+/g, '_').toLowerCase();
-            loadChatMessages(chatId);
+            // Create device-isolated unique Chat ID so different phones get distinct sessions
+            const providerKey = name.replace(/\s+/g, '_').toLowerCase();
+            currentChatId = `${providerKey}_${deviceSessionId}`;
+
+            loadChatMessages(currentChatId);
             document.getElementById('chatModal').classList.remove('hidden');
         };
 
@@ -751,10 +762,9 @@
             const text = input.value.trim();
             if (!text) return;
 
-            if (!db || !currentChatProvider) return;
+            if (!db || !currentChatId) return;
 
-            const chatId = currentChatProvider.replace(/\s+/g, '_').toLowerCase();
-            const chatListRef = ref(db, 'chats/' + chatId);
+            const chatListRef = ref(db, 'chats/' + currentChatId);
 
             push(chatListRef, {
                 sender: 'user',
@@ -777,10 +787,9 @@
                 return;
             }
 
-            if (!db || !currentChatProvider) return;
+            if (!db || !currentChatId) return;
 
-            const chatId = currentChatProvider.replace(/\s+/g, '_').toLowerCase();
-            const chatListRef = ref(db, 'chats/' + chatId);
+            const chatListRef = ref(db, 'chats/' + currentChatId);
 
             push(chatListRef, {
                 sender: 'user',
@@ -858,9 +867,8 @@
                 }
             }
 
-            if (db && pendingBookingMessageKey && currentChatProvider) {
-                const chatId = currentChatProvider.replace(/\s+/g, '_').toLowerCase();
-                const msgRef = ref(db, `chats/${chatId}/${pendingBookingMessageKey}`);
+            if (db && pendingBookingMessageKey && currentChatId) {
+                const msgRef = ref(db, `chats/${currentChatId}/${pendingBookingMessageKey}`);
                 
                 update(msgRef, { status: 'accepted' });
                 addNotification(currentChatProvider, `Booking confirmed and lead unlocked successfully!`);
@@ -873,9 +881,8 @@
         };
 
         window.cancelBookingRequest = function(msgKey) {
-            if (db && currentChatProvider && confirm("Are you sure you want to cancel/decline this booking request?")) {
-                const chatId = currentChatProvider.replace(/\s+/g, '_').toLowerCase();
-                const msgRef = ref(db, `chats/${chatId}/${msgKey}`);
+            if (db && currentChatId && confirm("Are you sure you want to cancel/decline this booking request?")) {
+                const msgRef = ref(db, `chats/${currentChatId}/${msgKey}`);
                 update(msgRef, { status: 'cancelled' });
             }
         };
