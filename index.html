@@ -206,7 +206,7 @@
                     <textarea id="pDesc" rows="3" required class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
                 </div>
 
-                <!-- Secure Stripe Card Section (Hidden for Admin Automatically) -->
+                <!-- Secure Stripe Card Section -->
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 mt-2" id="paymentSectionContainer">
                     <label class="block text-xs font-bold text-slate-700 mb-1.5" id="cardLabel"><i class="fa-solid fa-credit-card mr-1 text-emerald-600"></i> Credit / Card Payment ($10.00 Service Fee)</label>
                     <div id="card-element" class="bg-white p-3 rounded-lg border border-slate-200"></div>
@@ -241,7 +241,7 @@
         </div>
     </div>
 
-    <!-- Live Chat Modal -->
+    <!-- Live Chat Modal (Integrated with Firebase Realtime Database) -->
     <div id="chatModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-3">
@@ -249,10 +249,10 @@
                 <button onclick="closeChat()" class="text-slate-400 hover:text-slate-600 text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="chatMessages" class="h-52 overflow-y-auto bg-slate-50 rounded-xl p-3 mb-3 space-y-2 text-xs">
-                <!-- Chat messages will be loaded here -->
+                <!-- Realtime chat messages will be loaded here -->
             </div>
             <div class="flex space-x-2">
-                <input type="text" id="chatInput" placeholder="Type a message..." class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <input type="text" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMessage()" class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 <button onclick="sendMessage()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow hover:bg-emerald-700"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
         </div>
@@ -272,8 +272,27 @@
         </div>
     </div>
 
-    <!-- Script Logic -->
-    <script>
+    <!-- Script Logic (Firebase Realtime Sync Integrated) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, push, onChildAdded, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Firebase Configuration Keys
+        const firebaseConfig = {
+          apiKey: "AIzaSyBTrOCRMWMSklrIIdCacuEk_ApidP3kzJA",
+          authDomain: "neighborfix-5eb34.firebaseapp.com",
+          projectId: "neighborfix-5eb34",
+          storageBucket: "neighborfix-5eb34.firebasestorage.app",
+          messagingSenderId: "959574439817",
+          appId: "1:959574439817:web:6e668499b044686de0d358",
+          measurementId: "G-JMXYLN6FQ8"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        let activeChatRef = null;
+
         // Stripe Setup
         const STRIPE_PUBLISHABLE_KEY = "pk_live_YOUR_ACTUAL_LIVE_KEY_HERE";
         const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
@@ -301,9 +320,7 @@
 
         let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || ["isaiah cung"];
         let notifications = JSON.parse(localStorage.getItem('nf_notifications')) || [];
-        let chatHistories = JSON.parse(localStorage.getItem('nf_chat_histories')) || {};
 
-        // Filter notifications to show ONLY those related to the current provider being chatted with or user's own activity
         function addNotification(providerName, text) {
             if (!notifications[providerName]) {
                 notifications[providerName] = [];
@@ -370,7 +387,7 @@
             }
         }
 
-        function previewImage(event) {
+        window.previewImage = function(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
@@ -381,9 +398,9 @@
                 };
                 reader.readAsDataURL(file);
             }
-        }
+        };
 
-        function updateTotalFee() {
+        window.updateTotalFee = function() {
             const editId = document.getElementById('editProviderId').value;
             const paymentSection = document.getElementById('paymentSectionContainer');
             const planSection = document.getElementById('planSection');
@@ -433,9 +450,9 @@
                 submitBtn.innerText = "Pay $10.00 & Publish Listing";
                 submitBtn.className = "w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow mt-2";
             }
-        }
+        };
 
-        function reactivateExistingAccount() {
+        window.reactivateExistingAccount = function() {
             const nameInput = document.getElementById('pName').value.trim().toLowerCase();
             const phoneInput = document.getElementById('pPhone').value.trim();
 
@@ -451,7 +468,7 @@
             filterProviders();
             closePostModal();
             alert("Your listing has been successfully re-activated!");
-        }
+        };
 
         function calculateDistance(lat1, lon1, lat2, lon2) {
             if (!lat1 || !lon1 || !lat2 || !lon2) return "0.8 mi";
@@ -465,7 +482,7 @@
             return (R * c).toFixed(1) + " mi";
         }
 
-        function getUserLocation() {
+        window.getUserLocation = function() {
             const gpsText = document.getElementById('gpsText');
             if (navigator.geolocation) {
                 gpsText.innerText = "Accessing GPS location...";
@@ -479,7 +496,7 @@
                     (error) => { gpsText.innerText = "GPS Disabled / Using default location."; }
                 );
             } else { gpsText.innerText = "Geolocation not supported."; }
-        }
+        };
 
         function renderProviders(list) {
             const container = document.getElementById('providerList');
@@ -528,7 +545,6 @@
                         <a href="tel:${p.phone}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center justify-center">
                             <i class="fa-solid fa-phone"></i>
                         </a>
-                        <!-- Edit Profile Button -->
                         <button onclick="openEditModal(${p.id})" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center justify-center" title="Edit Profile">
                             <i class="fa-solid fa-pen-to-square"></i>
                         </button>
@@ -537,16 +553,16 @@
             `}).join('');
         }
 
-        function openMapModal(name, lat, lng) {
+        window.openMapModal = function(name, lat, lng) {
             document.getElementById('mapTitle').innerText = name + " Location Map";
             document.getElementById('googleMapIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
             document.getElementById('getDirectionBtn').href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
             document.getElementById('mapModal').classList.remove('hidden');
-        }
+        };
 
-        function closeMapModal() { document.getElementById('mapModal').classList.add('hidden'); }
+        window.closeMapModal = function() { document.getElementById('mapModal').classList.add('hidden'); };
 
-        function capturePostLocation() {
+        window.capturePostLocation = function() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition((pos) => {
                     document.getElementById('pLat').value = pos.coords.latitude;
@@ -554,9 +570,9 @@
                     document.getElementById('gpsPostBtnText').innerText = "GPS Location Captured ✓";
                 });
             }
-        }
+        };
 
-        function openPostModal() {
+        window.openPostModal = function() {
             document.getElementById('editProviderId').value = "";
             document.getElementById('modalTitle').innerText = "Post Your Service Listing";
             document.getElementById('providerForm').reset();
@@ -568,9 +584,9 @@
                 cardElement.mount('#card-element');
                 cardMounted = true;
             }
-        }
+        };
 
-        function openEditModal(id) {
+        window.openEditModal = function(id) {
             const p = providers.find(item => item.id === id);
             if (!p) return;
 
@@ -592,11 +608,11 @@
 
             document.getElementById('postModal').classList.remove('hidden');
             updateTotalFee();
-        }
+        };
 
-        function closePostModal() { document.getElementById('postModal').classList.add('hidden'); }
+        window.closePostModal = function() { document.getElementById('postModal').classList.add('hidden'); };
 
-        async function saveProvider(e) {
+        window.saveProvider = async function(e) {
             e.preventDefault();
             const editId = document.getElementById('editProviderId').value;
             const providerName = document.getElementById('pName').value.trim();
@@ -684,9 +700,9 @@
                 addNotification(providerName, `New Listing Published: "${serviceTitle}"`);
                 alert(isAdmin ? "Admin Listing successfully published for Free!" : "Payment Successful & Listing Published!");
             }
-        }
+        };
 
-        function filterCat(e, cat) {
+        window.filterCat = function(e, cat) {
             currentCategory = cat;
             document.querySelectorAll('.cat-btn').forEach(btn => {
                 btn.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
@@ -696,9 +712,9 @@
             e.target.classList.add('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
 
             filterProviders();
-        }
+        };
 
-        function filterProviders() {
+        window.filterProviders = function() {
             const query = document.getElementById('searchInput').value.toLowerCase();
             const filtered = providers.filter(p => {
                 const matchesCat = (currentCategory === 'all' || p.category === currentCategory);
@@ -706,57 +722,68 @@
                 return matchesCat && matchesSearch;
             });
             renderProviders(filtered);
-        }
+        };
 
-        // Persistent Chat Logic with Isolated Notifications per Provider
-        function openChat(name) {
+        // Realtime Firebase Chat Integration Logic
+        window.openChat = function(name) {
             currentChatProvider = name;
             document.getElementById('chatTitle').innerText = "Chat with " + name;
-            
-            if (!chatHistories[name]) {
-                chatHistories[name] = [
-                    { sender: 'provider', text: "Hello! Thanks for reaching out. How can I help you today?" }
-                ];
-            }
-            
-            renderChatMessages();
-            document.getElementById('chatModal').classList.remove('hidden');
-        }
-
-        function renderChatMessages() {
             const msgBox = document.getElementById('chatMessages');
-            const history = chatHistories[currentChatProvider] || [];
-            
-            msgBox.innerHTML = history.map(m => {
-                if (m.sender === 'user') {
-                    return `<div class="bg-emerald-600 text-white p-2.5 rounded-xl shadow-sm max-w-[80%] ml-auto text-xs">${m.text}</div>`;
-                } else {
-                    return `<div class="bg-white p-2.5 rounded-xl shadow-sm max-w-[80%] text-slate-600">${m.text}</div>`;
-                }
-            }).join('');
-            
-            msgBox.scrollTop = msgBox.scrollHeight;
-        }
+            msgBox.innerHTML = '';
 
-        function closeChat() { document.getElementById('chatModal').classList.add('hidden'); }
-
-        function sendMessage() {
-            const input = document.getElementById('chatInput');
-            if(!input.value.trim()) return;
-            const msgText = input.value;
-            
-            if (!chatHistories[currentChatProvider]) {
-                chatHistories[currentChatProvider] = [];
+            if (activeChatRef) {
+                off(activeChatRef);
             }
+
+            // Using provider name as room identifier for real-time sync across devices
+            const chatId = name.replace(/\s+/g, '_').toLowerCase();
+            activeChatRef = ref(db, 'chats/' + chatId);
+
+            // Listen for new messages in real-time
+            onChildAdded(activeChatRef, (snapshot) => {
+                const msg = snapshot.val();
+                appendMessageToUI(msg);
+            });
+
+            document.getElementById('chatModal').classList.remove('hidden');
+        };
+
+        window.closeChat = function() { 
+            if (activeChatRef) off(activeChatRef);
+            document.getElementById('chatModal').classList.add('hidden'); 
+        };
+
+        window.sendMessage = function() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if(!text || !currentChatProvider) return;
             
-            chatHistories[currentChatProvider].push({ sender: 'user', text: msgText });
-            localStorage.setItem('nf_chat_histories', JSON.stringify(chatHistories));
+            const chatId = currentChatProvider.replace(/\s+/g, '_').toLowerCase();
+            const chatListRef = ref(db, 'chats/' + chatId);
+            
+            // Push message to Firebase Cloud Database
+            push(chatListRef, {
+                sender: 'user',
+                text: text,
+                timestamp: Date.now()
+            });
             
             input.value = '';
-            renderChatMessages();
+            addNotification(currentChatProvider, `New message sent: "${text}"`);
+        };
 
-            // Add notification specific only to this active provider chat
-            addNotification(currentChatProvider, `New message sent: "${msgText}"`);
+        function appendMessageToUI(m) {
+            const msgBox = document.getElementById('chatMessages');
+            const msgDiv = document.createElement('div');
+            
+            if (m.sender === 'user') {
+                msgDiv.className = "bg-emerald-600 text-white p-2.5 rounded-xl shadow-sm max-w-[80%] ml-auto text-xs";
+            } else {
+                msgDiv.className = "bg-white p-2.5 rounded-xl shadow-sm max-w-[80%] text-slate-600 text-xs";
+            }
+            msgDiv.innerText = m.text;
+            msgBox.appendChild(msgDiv);
+            msgBox.scrollTop = msgBox.scrollHeight;
         }
 
         const translations = {
@@ -766,7 +793,7 @@
             hi: { subtitle: "स्थानीय सेवा बाज़ार", search_placeholder: "सुरक्षा, प्लंबर खोजें...", cat_all: "सभी सेवाएं", cat_security: "होम सिक्योरिटी", cat_plumbing: "प्लंबिंग", cat_hvac: "बिजली/एसी", cat_appliance: "उपकरण मरम्मत", cat_handyman: "हैंडीमैन", cat_cleaning: "सफाई", cat_lawn: "लॉन और यार", cat_towing: "टोइंग", cat_locksmith: "ताला चाबी", cat_moving: "मूविंग", verified_title: "सत्यापित नजदीकी सेवा प्रदाता", direct_chat: "सीधा चैट करें", nav_home: "होम" }
         };
 
-        function changeLanguage(lang) {
+        window.changeLanguage = function(lang) {
             currentLang = lang;
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
@@ -777,7 +804,7 @@
                 if (translations[lang] && translations[lang][key]) el.placeholder = translations[lang][key];
             });
             filterProviders();
-        }
+        };
 
         document.addEventListener('DOMContentLoaded', () => { 
             getUserLocation();
