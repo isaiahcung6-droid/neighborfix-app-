@@ -295,10 +295,10 @@
         </div>
     </div>
 
-    <!-- Script Logic -->
+    <!-- Script Logic (Real-time Firebase Database Synchronized) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, push, onChildAdded, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, onChildAdded, off, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyBTrOCRMWMSklrIIdCacuEk_ApidP3kzJA",
@@ -338,27 +338,29 @@
         let currentCategory = 'all';
         let currentChatProvider = '';
 
-        const ADMIN_PHONE = "3173587342";
-        const ADMIN_EMAIL = "isaiahcung6@gmail.com";
         const ADMIN_NAME = "isaiah cung";
-
-        // Forced absolute wipe version key
-        if (!localStorage.getItem('nf_v12_wipe_all')) {
-            localStorage.clear();
-            localStorage.setItem('nf_v12_wipe_all', 'true');
-        }
-
-        // Completely empty providers array (No default listings, clean slate)
-        let providers = JSON.parse(localStorage.getItem('nf_providers')) || [];
-
-        let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || ["isaiah cung"];
+        let providers = [];
+        let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || ["isaiah cung", "rising star music studio"];
         let paidJobLeads = JSON.parse(localStorage.getItem('nf_paid_job_leads')) || {};
         let notifications = JSON.parse(localStorage.getItem('nf_notifications')) || {};
 
+        // Real-time synchronization with Firebase Database for Providers
+        const providersRef = ref(db, 'providers');
+        onValue(providersRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                providers = Object.values(data);
+            } else {
+                providers = [];
+            }
+            filterProviders();
+        });
+
         window.deleteAccountData = function() {
-            if (confirm("Are you sure you want to delete your account data and reset listings?")) {
+            if (confirm("Are you sure you want to delete all database listings and reset account data?")) {
+                set(providersRef, null);
                 localStorage.clear();
-                alert("Account data successfully deleted and reset.");
+                alert("Account data and database listings successfully wiped.");
                 location.reload();
             }
         };
@@ -535,7 +537,7 @@
                         <a href="tel:${p.phone}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center justify-center">
                             <i class="fa-solid fa-phone"></i>
                         </a>
-                        <button onclick="openEditModal(${p.id})" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center justify-center cursor-pointer" title="Edit Profile">
+                        <button onclick="openEditModal('${p.id}')" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center justify-center cursor-pointer" title="Edit Profile">
                             <i class="fa-solid fa-pen-to-square"></i>
                         </button>
                     </div>
@@ -573,7 +575,7 @@
         };
 
         window.openEditModal = function(id) {
-            const p = providers.find(item => item.id === id);
+            const p = providers.find(item => item.id == id);
             if (!p) return;
 
             document.getElementById('editProviderId').value = p.id;
@@ -629,57 +631,32 @@
             }
 
             const isAlreadyVip = vipMembers.includes(providerName.toLowerCase()) || selectedPlan === 'vip';
+            const providerId = editId ? editId : 'p_' + Date.now();
 
-            if (editId) {
-                providers = providers.map(p => {
-                    if (p.id == editId) {
-                        return {
-                            ...p,
-                            name: providerName,
-                            img: providerImg,
-                            category: document.getElementById('pCategory').value,
-                            title: serviceTitle,
-                            rate: document.getElementById('pRate').value,
-                            phone: document.getElementById('pPhone').value.trim(),
-                            desc: document.getElementById('pDesc').value,
-                            isVip: isAlreadyVip || p.isVip,
-                            lat: parseFloat(document.getElementById('pLat').value) || p.lat,
-                            lng: parseFloat(document.getElementById('pLng').value) || p.lng
-                        };
-                    }
-                    return p;
-                });
-                localStorage.setItem('nf_providers', JSON.stringify(providers));
-                filterProviders();
-                closePostModal();
-                alert("Profile & Listing successfully updated!");
-            } else {
-                const newP = {
-                    id: Date.now(),
-                    name: providerName,
-                    img: providerImg,
-                    category: document.getElementById('pCategory').value,
-                    title: serviceTitle,
-                    rate: document.getElementById('pRate').value,
-                    phone: document.getElementById('pPhone').value.trim(),
-                    desc: document.getElementById('pDesc').value,
-                    isVip: isAlreadyVip,
-                    active: true,
-                    lat: parseFloat(document.getElementById('pLat').value) || 39.6137,
-                    lng: parseFloat(document.getElementById('pLng').value) || -86.1064,
-                    rating: "5.0"
-                };
-                
-                providers.unshift(newP);
-                localStorage.setItem('nf_providers', JSON.stringify(providers));
-                filterProviders();
-                closePostModal();
-                submitBtn.disabled = false;
-                document.getElementById('providerForm').reset();
+            const providerData = {
+                id: providerId,
+                name: providerName,
+                img: providerImg,
+                category: document.getElementById('pCategory').value,
+                title: serviceTitle,
+                rate: document.getElementById('pRate').value,
+                phone: document.getElementById('pPhone').value.trim(),
+                desc: document.getElementById('pDesc').value,
+                isVip: isAlreadyVip,
+                active: true,
+                lat: parseFloat(document.getElementById('pLat').value) || 39.6137,
+                lng: parseFloat(document.getElementById('pLng').value) || -86.1064,
+                rating: "5.0"
+            };
 
-                addNotification(providerName, `New Listing Published: "${serviceTitle}"`);
-                alert(selectedPlan === 'vip' ? "VIP Payment Successful & Lifetime Listing Published!" : "Listing successfully published for Free!");
-            }
+            // Save to Firebase Realtime Database
+            await set(ref(db, 'providers/' + providerId), providerData);
+
+            closePostModal();
+            submitBtn.disabled = false;
+            document.getElementById('providerForm').reset();
+            addNotification(providerName, `Listing Published: "${serviceTitle}"`);
+            alert(selectedPlan === 'vip' ? "VIP Payment Successful & Lifetime Listing Published!" : "Listing successfully published for Free!");
         };
 
         window.filterCat = function(e, cat) {
@@ -874,7 +851,6 @@
 
         document.addEventListener('DOMContentLoaded', () => { 
             getUserLocation();
-            filterProviders();
             updateNotifBadge();
         });
     </script>
