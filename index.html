@@ -295,10 +295,10 @@
         </div>
     </div>
 
-    <!-- Script Logic (Robust LocalStorage & Firebase Backup Sync) -->
+    <!-- Script Logic (Cloud Database Realtime Sync) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, push, onChildAdded, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, onChildAdded, off, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyBTrOCRMWMSklrIIdCacuEk_ApidP3kzJA",
@@ -310,13 +310,8 @@
           measurementId: "G-JMXYLN6FQ8"
         };
 
-        let db = null;
-        try {
-            const app = initializeApp(firebaseConfig);
-            db = getDatabase(app);
-        } catch(e) {
-            console.log("Firebase Init Warning:", e);
-        }
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
         let activeChatRef = null;
         let stripe = null;
@@ -344,17 +339,30 @@
         let currentChatProvider = '';
 
         const ADMIN_NAME = "isaiah cung";
-        let providers = JSON.parse(localStorage.getItem('nf_providers')) || [];
+        let providers = [];
         let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || ["isaiah cung", "rising star music studio"];
         let paidJobLeads = JSON.parse(localStorage.getItem('nf_paid_job_leads')) || {};
         let notifications = JSON.parse(localStorage.getItem('nf_notifications')) || {};
 
+        // Realtime Global Sync from Cloud Database
+        const cloudProvidersRef = ref(db, 'global_providers');
+        onValue(cloudProvidersRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                providers = Object.values(data);
+            } else {
+                providers = [];
+            }
+            filterProviders();
+        });
+
         window.deleteAccountData = function() {
-            if (confirm("Are you sure you want to delete all account data and reset local listings?")) {
+            if (confirm("Are you sure you want to delete all cloud database listings and reset account data?")) {
+                set(cloudProvidersRef, null);
                 localStorage.clear();
                 providers = [];
                 filterProviders();
-                alert("Account data and local listings successfully wiped.");
+                alert("Account data and global listings successfully wiped.");
                 location.reload();
             }
         };
@@ -603,7 +611,6 @@
                 const providerImg = document.getElementById('pImgData').value || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80";
                 const serviceTitle = document.getElementById('pTitle').value.trim();
                 const selectedPlan = document.querySelector('input[name="plan"]:checked') ? document.querySelector('input[name="plan"]:checked').value : 'standard';
-                const submitBtn = document.getElementById('submitBtn');
 
                 if (!vipMembers.includes(providerName.toLowerCase()) && selectedPlan === 'vip') {
                     vipMembers.push(providerName.toLowerCase());
@@ -629,21 +636,15 @@
                     rating: "5.0"
                 };
 
-                if (editId) {
-                    providers = providers.map(p => p.id == editId ? newProvider : p);
-                } else {
-                    providers.unshift(newProvider);
-                }
+                // Sync directly to Cloud Realtime Database
+                set(ref(db, 'global_providers/' + providerId), newProvider);
 
-                localStorage.setItem('nf_providers', JSON.stringify(providers));
-                filterProviders();
                 closePostModal();
-
                 addNotification(providerName, `Listing Published: "${serviceTitle}"`);
-                alert(selectedPlan === 'vip' ? "VIP Payment Successful & Lifetime Listing Published!" : "Listing successfully published for Free!");
+                alert(selectedPlan === 'vip' ? "VIP Payment Successful & Published globally!" : "Listing successfully published globally!");
             } catch(err) {
                 console.error("Save Error:", err);
-                alert("Error saving listing. Please try again.");
+                alert("Error saving listing to cloud. Please try again.");
             }
         };
 
@@ -840,7 +841,6 @@
 
         document.addEventListener('DOMContentLoaded', () => { 
             getUserLocation();
-            filterProviders();
             updateNotifBadge();
         });
     </script>
