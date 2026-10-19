@@ -62,12 +62,13 @@
             <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
                 <i class="fa-solid fa-magnifying-glass"></i>
             </span>
-            <input type="text" id="searchInput" onkeyup="filterProviders()" placeholder="Search plumbers, security, handymen..." data-i18n-placeholder="search_placeholder" class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm">
+            <input type="text" id="searchInput" onkeyup="filterProviders()" placeholder="Search plumbers, roofing, painting..." data-i18n-placeholder="search_placeholder" class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm">
         </div>
 
         <!-- Categories Options -->
         <div class="flex space-x-2 overflow-x-auto pb-2 mb-5 no-scrollbar">
             <button onclick="filterCat(event, 'all')" class="cat-btn active bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm shadow-emerald-200 transition" data-i18n="cat_all">All Services</button>
+            <button onclick="filterCat(event, 'roofing')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_roofing">Roofing & Painting</button>
             <button onclick="filterCat(event, 'security')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_security">Home Security</button>
             <button onclick="filterCat(event, 'plumbing')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_plumbing">Plumbing</button>
             <button onclick="filterCat(event, 'hvac')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_hvac">Electrical / A/C</button>
@@ -163,10 +164,11 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Category</label>
                     <select id="pCategory" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <option value="roofing">Roofing & House Painting</option>
                         <option value="security">Home Security & CCTV</option>
                         <option value="plumbing">Plumbing</option>
                         <option value="hvac">Electrical / A/C</option>
-                        <option value="appliance">Appliance Repair (Washing Machine & Fridge)</option>
+                        <option value="appliance">Appliance Repair</option>
                         <option value="handyman">Handyman</option>
                         <option value="cleaning">Home Cleaning</option>
                         <option value="lawn">Lawn & Yard</option>
@@ -176,7 +178,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Service Title (e.g. CCTV Camera)</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Service Title (e.g. Roof Repair & Painting)</label>
                     <input type="text" id="pTitle" required class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                 </div>
                 <div class="flex space-x-2">
@@ -272,12 +274,11 @@
         </div>
     </div>
 
-    <!-- Script Logic (Firebase Realtime Sync + Chat Translation) -->
+    <!-- Script Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, onChildAdded, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Firebase Configuration Keys
         const firebaseConfig = {
           apiKey: "AIzaSyBTrOCRMWMSklrIIdCacuEk_ApidP3kzJA",
           authDomain: "neighborfix-5eb34.firebaseapp.com",
@@ -288,12 +289,10 @@
           measurementId: "G-JMXYLN6FQ8"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         let activeChatRef = null;
 
-        // Stripe Setup
         const STRIPE_PUBLISHABLE_KEY = "pk_live_YOUR_ACTUAL_LIVE_KEY_HERE";
         const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
         const elements = stripe.elements();
@@ -306,18 +305,15 @@
         let currentCategory = 'all';
         let currentChatProvider = '';
 
-        // Admin Config
         const ADMIN_PHONE = "3173587342";
         const ADMIN_EMAIL = "isaiahcung6@gmail.com";
         const ADMIN_NAME = "isaiah cung";
 
-        // Force Clear Old Fake Accounts Cache from Browser Memory
-        if (!localStorage.getItem('nf_v2_cleaned')) {
+        if (!localStorage.getItem('nf_v3_cleaned')) {
             localStorage.removeItem('nf_providers');
-            localStorage.setItem('nf_v2_cleaned', 'true');
+            localStorage.setItem('nf_v3_cleaned', 'true');
         }
 
-        // Real Profile Only
         let realOnlyDefault = [
             { id: 3, name: "Isaiah Cung", category: "security", title: "CCTV Camera Installation", rate: "$35/hr", lat: 39.6137, lng: -86.1064, rating: "5.0", phone: "3173587342", desc: "Professional CCTV camera installation service (Labor only - Customer provides equipment). Expert mounting, wiring, and mobile app setup.", isVip: true, active: true, img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" }
         ];
@@ -749,7 +745,6 @@
             const chatId = name.replace(/\s+/g, '_').toLowerCase();
             activeChatRef = ref(db, 'chats/' + chatId);
 
-            // Listen for new messages in real-time
             onChildAdded(activeChatRef, (snapshot) => {
                 const msg = snapshot.val();
                 appendMessageToUI(msg);
@@ -771,7 +766,6 @@
             const chatId = currentChatProvider.replace(/\s+/g, '_').toLowerCase();
             const chatListRef = ref(db, 'chats/' + chatId);
             
-            // Push message to Firebase Cloud Database
             push(chatListRef, {
                 sender: 'user',
                 text: text,
@@ -782,7 +776,6 @@
             addNotification(currentChatProvider, `New message sent: "${text}"`);
         };
 
-        // Live Chat Message Append + Realtime Translation API
         function appendMessageToUI(m) {
             const msgBox = document.getElementById('chatMessages');
             const wrapperDiv = document.createElement('div');
@@ -799,7 +792,6 @@
             textSpan.innerText = m.text;
             msgDiv.appendChild(textSpan);
 
-            // Translation Button
             const transBtn = document.createElement('button');
             transBtn.className = "text-[9px] text-slate-400 hover:text-emerald-600 mt-1 flex items-center font-medium underline";
             transBtn.innerHTML = `<i class="fa-solid fa-language mr-1"></i> Translate`;
@@ -834,10 +826,10 @@
         }
 
         const translations = {
-            en: { subtitle: "Local Services Marketplace", search_placeholder: "Search plumbers, security, handymen...", cat_all: "All Services", cat_security: "Home Security", cat_plumbing: "Plumbing", cat_hvac: "Electrical / A/C", cat_appliance: "Appliance Repair", cat_handyman: "Handyman", cat_cleaning: "Home Cleaning", cat_lawn: "Lawn & Yard", cat_towing: "Towing Service", cat_locksmith: "Locksmith", cat_moving: "Moving & Hauling", verified_title: "Verified Nearby Providers", direct_chat: "Direct Chat", nav_home: "Home" },
-            my: { subtitle: "ဒေသတွင်း ဝန်ဆောင်မှု ဈေးကွက်", search_placeholder: "ပိုက်ပြင်၊ လုံခြုံရေး၊ လက်သမား ရှာရန်...", cat_all: "ဝန်ဆောင်မှု အားလုံး", cat_security: "အိမ်သုံး လုံခြုံရေး", cat_plumbing: "ရေပိုက်", cat_hvac: "မီး / A/C", cat_appliance: "လျှပ်စစ်ပစ္စည်းပြင်", cat_handyman: "လက်သမား/အထွေထွေ", cat_cleaning: "အိမ်သန့်ရှင်းရေး", cat_lawn: "ခြံသန့်ရှင်းရေး", cat_towing: "ကားပျက်ဆွဲ", cat_locksmith: "သော့ပြင်", cat_moving: "ပစ္စည်းရွှေ့ပြောင်း", verified_title: "အနီးအနားရှိ အတည်ပြုပြီး ဝန်ဆောင်မှုပေးသူများ", direct_chat: "တိုက်ရိုက် စကားပြောရန်", nav_home: "ပင်မ" },
-            es: { subtitle: "Mercado de Servicios Locales", search_placeholder: "Buscar seguridad, gasfiteros...", cat_all: "Todos", cat_security: "Seguridad del Hogar", cat_plumbing: "Fontanería", cat_hvac: "Electricidad", cat_appliance: "Reparación", cat_handyman: "Handyman", cat_cleaning: "Limpieza", cat_lawn: "Jardinería", cat_towing: "Remolque", cat_locksmith: "Cerrajería", cat_moving: "Mudanzas", verified_title: "Proveedores Verificados", direct_chat: "Chat Directo", nav_home: "Inicio" },
-            hi: { subtitle: "स्थानीय सेवा बाज़ार", search_placeholder: "सुरक्षा, प्लंबर खोजें...", cat_all: "सभी सेवाएं", cat_security: "होम सिक्योरिटी", cat_plumbing: "प्लंबिंग", cat_hvac: "बिजली/एसी", cat_appliance: "उपकरण मरम्मत", cat_handyman: "हैंडीमैन", cat_cleaning: "सफाई", cat_lawn: "लॉन और यार", cat_towing: "टोइंग", cat_locksmith: "ताला चाबी", cat_moving: "मूविंग", verified_title: "सत्यापित नजदीकी सेवा प्रदाता", direct_chat: "सीधा चैट करें", nav_home: "होम" }
+            en: { subtitle: "Local Services Marketplace", search_placeholder: "Search plumbers, roofing, painting...", cat_all: "All Services", cat_roofing: "Roofing & Painting", cat_security: "Home Security", cat_plumbing: "Plumbing", cat_hvac: "Electrical / A/C", cat_appliance: "Appliance Repair", cat_handyman: "Handyman", cat_cleaning: "Home Cleaning", cat_lawn: "Lawn & Yard", cat_towing: "Towing Service", cat_locksmith: "Locksmith", cat_moving: "Moving & Hauling", verified_title: "Verified Nearby Providers", direct_chat: "Direct Chat", nav_home: "Home" },
+            my: { subtitle: "ဒေသတွင်း ဝန်ဆောင်မှု ဈေးကွက်", search_placeholder: "ပိုက်ပြင်၊ ခေါင်မိုး၊ ဆေးသုတ် ရှာရန်...", cat_all: "ဝန်ဆောင်မှု အားလုံး", cat_roofing: "ခေါင်မိုးနှင့် ဆေးသုတ်ခြင်း", cat_security: "အိမ်သုံး လုံခြုံရေး", cat_plumbing: "ရေပိုက်", cat_hvac: "မီး / A/C", cat_appliance: "လျှပ်စစ်ပစ္စည်းပြင်", cat_handyman: "လက်သမား/အထွေထွေ", cat_cleaning: "အိမ်သန့်ရှင်းရေး", cat_lawn: "ခြံသန့်ရှင်းရေး", cat_towing: "ကားပျက်ဆွဲ", cat_locksmith: "သော့ပြင်", cat_moving: "ပစ္စည်းရွှေ့ပြောင်း", verified_title: "အနီးအနားရှိ အတည်ပြုပြီး ဝန်ဆောင်မှုပေးသူများ", direct_chat: "တိုက်ရိုက် စကားပြောရန်", nav_home: "ပင်မ" },
+            es: { subtitle: "Mercado de Servicios Locales", search_placeholder: "Buscar techos, pintura...", cat_all: "Todos", cat_roofing: "Techos y Pintura", cat_security: "Seguridad del Hogar", cat_plumbing: "Fontanería", cat_hvac: "Electricidad", cat_appliance: "Reparación", cat_handyman: "Handyman", cat_cleaning: "Limpieza", cat_lawn: "Jardinería", cat_towing: "Remolque", cat_locksmith: "Cerrajería", cat_moving: "Mudanzas", verified_title: "Proveedores Verificados", direct_chat: "Chat Directo", nav_home: "Inicio" },
+            hi: { subtitle: "स्थानीय सेवा बाज़ार", search_placeholder: "रूफिंग, पेंटिंग खोजें...", cat_all: "सभी सेवाएं", cat_roofing: "रूफिंग और पेंटिंग", cat_security: "होम सिक्योरिटी", cat_plumbing: "प्लंबिंग", cat_hvac: "बिजली/एसी", cat_appliance: "उपकरण मरम्मत", cat_handyman: "हैंडीमैन", cat_cleaning: "सफाई", cat_lawn: "लॉन और यार", cat_towing: "टोइंग", cat_locksmith: "ताला चाबी", cat_moving: "मूविंग", verified_title: "सत्यापित नजदीकी सेवा प्रदाता", direct_chat: "सीधा चैट करें", nav_home: "होम" }
         };
 
         window.changeLanguage = function(lang) {
