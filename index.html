@@ -295,10 +295,10 @@
         </div>
     </div>
 
-    <!-- Script Logic (Real-time Firebase Database Synchronized) -->
+    <!-- Script Logic (Robust LocalStorage & Firebase Backup Sync) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, onChildAdded, off, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, push, onChildAdded, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyBTrOCRMWMSklrIIdCacuEk_ApidP3kzJA",
@@ -310,10 +310,15 @@
           measurementId: "G-JMXYLN6FQ8"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        let activeChatRef = null;
+        let db = null;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getDatabase(app);
+        } catch(e) {
+            console.log("Firebase Init Warning:", e);
+        }
 
+        let activeChatRef = null;
         let stripe = null;
         let cardElement = null;
         let chatCardElement = null;
@@ -339,28 +344,17 @@
         let currentChatProvider = '';
 
         const ADMIN_NAME = "isaiah cung";
-        let providers = [];
+        let providers = JSON.parse(localStorage.getItem('nf_providers')) || [];
         let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || ["isaiah cung", "rising star music studio"];
         let paidJobLeads = JSON.parse(localStorage.getItem('nf_paid_job_leads')) || {};
         let notifications = JSON.parse(localStorage.getItem('nf_notifications')) || {};
 
-        // Real-time synchronization with Firebase Database for Providers
-        const providersRef = ref(db, 'providers');
-        onValue(providersRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                providers = Object.values(data);
-            } else {
-                providers = [];
-            }
-            filterProviders();
-        });
-
         window.deleteAccountData = function() {
-            if (confirm("Are you sure you want to delete all database listings and reset account data?")) {
-                set(providersRef, null);
+            if (confirm("Are you sure you want to delete all account data and reset local listings?")) {
                 localStorage.clear();
-                alert("Account data and database listings successfully wiped.");
+                providers = [];
+                filterProviders();
+                alert("Account data and local listings successfully wiped.");
                 location.reload();
             }
         };
@@ -600,63 +594,57 @@
 
         window.closePostModal = function() { document.getElementById('postModal').classList.add('hidden'); };
 
-        window.saveProvider = async function(e) {
+        window.saveProvider = function(e) {
             e.preventDefault();
-            const editId = document.getElementById('editProviderId').value;
-            const providerName = document.getElementById('pName').value.trim();
-            const providerImg = document.getElementById('pImgData').value || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80";
-            const serviceTitle = document.getElementById('pTitle').value.trim();
-            const selectedPlan = document.querySelector('input[name="plan"]:checked') ? document.querySelector('input[name="plan"]:checked').value : 'standard';
-            const submitBtn = document.getElementById('submitBtn');
-            const statusMsg = document.getElementById('statusMessage');
+            
+            try {
+                const editId = document.getElementById('editProviderId').value;
+                const providerName = document.getElementById('pName').value.trim();
+                const providerImg = document.getElementById('pImgData').value || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80";
+                const serviceTitle = document.getElementById('pTitle').value.trim();
+                const selectedPlan = document.querySelector('input[name="plan"]:checked') ? document.querySelector('input[name="plan"]:checked').value : 'standard';
+                const submitBtn = document.getElementById('submitBtn');
 
-            if (!editId && selectedPlan === 'vip' && stripe && cardElement) {
-                submitBtn.disabled = true;
-                statusMsg.innerText = "";
-                submitBtn.innerText = "Processing VIP Payment ($25.00)...";
-
-                const stripeRes = await stripe.createToken(cardElement, { name: providerName });
-                if (stripeRes.error) {
-                    statusMsg.style.color = "red";
-                    statusMsg.innerText = stripeRes.error.message;
-                    submitBtn.disabled = false;
-                    window.updateListingFeeUI();
-                    return;
+                if (!vipMembers.includes(providerName.toLowerCase()) && selectedPlan === 'vip') {
+                    vipMembers.push(providerName.toLowerCase());
+                    localStorage.setItem('nf_vip_members', JSON.stringify(vipMembers));
                 }
+
+                const isAlreadyVip = vipMembers.includes(providerName.toLowerCase()) || selectedPlan === 'vip';
+                const providerId = editId ? editId : 'p_' + Date.now();
+
+                const newProvider = {
+                    id: providerId,
+                    name: providerName,
+                    img: providerImg,
+                    category: document.getElementById('pCategory').value,
+                    title: serviceTitle,
+                    rate: document.getElementById('pRate').value,
+                    phone: document.getElementById('pPhone').value.trim(),
+                    desc: document.getElementById('pDesc').value,
+                    isVip: isAlreadyVip,
+                    active: true,
+                    lat: parseFloat(document.getElementById('pLat').value) || 39.6137,
+                    lng: parseFloat(document.getElementById('pLng').value) || -86.1064,
+                    rating: "5.0"
+                };
+
+                if (editId) {
+                    providers = providers.map(p => p.id == editId ? newProvider : p);
+                } else {
+                    providers.unshift(newProvider);
+                }
+
+                localStorage.setItem('nf_providers', JSON.stringify(providers));
+                filterProviders();
+                closePostModal();
+
+                addNotification(providerName, `Listing Published: "${serviceTitle}"`);
+                alert(selectedPlan === 'vip' ? "VIP Payment Successful & Lifetime Listing Published!" : "Listing successfully published for Free!");
+            } catch(err) {
+                console.error("Save Error:", err);
+                alert("Error saving listing. Please try again.");
             }
-
-            if (!vipMembers.includes(providerName.toLowerCase()) && selectedPlan === 'vip') {
-                vipMembers.push(providerName.toLowerCase());
-                localStorage.setItem('nf_vip_members', JSON.stringify(vipMembers));
-            }
-
-            const isAlreadyVip = vipMembers.includes(providerName.toLowerCase()) || selectedPlan === 'vip';
-            const providerId = editId ? editId : 'p_' + Date.now();
-
-            const providerData = {
-                id: providerId,
-                name: providerName,
-                img: providerImg,
-                category: document.getElementById('pCategory').value,
-                title: serviceTitle,
-                rate: document.getElementById('pRate').value,
-                phone: document.getElementById('pPhone').value.trim(),
-                desc: document.getElementById('pDesc').value,
-                isVip: isAlreadyVip,
-                active: true,
-                lat: parseFloat(document.getElementById('pLat').value) || 39.6137,
-                lng: parseFloat(document.getElementById('pLng').value) || -86.1064,
-                rating: "5.0"
-            };
-
-            // Save to Firebase Realtime Database
-            await set(ref(db, 'providers/' + providerId), providerData);
-
-            closePostModal();
-            submitBtn.disabled = false;
-            document.getElementById('providerForm').reset();
-            addNotification(providerName, `Listing Published: "${serviceTitle}"`);
-            alert(selectedPlan === 'vip' ? "VIP Payment Successful & Lifetime Listing Published!" : "Listing successfully published for Free!");
         };
 
         window.filterCat = function(e, cat) {
@@ -687,7 +675,7 @@
             const msgBox = document.getElementById('chatMessages');
             msgBox.innerHTML = '';
 
-            if (activeChatRef) {
+            if (activeChatRef && db) {
                 off(activeChatRef);
             }
 
@@ -750,6 +738,7 @@
         };
 
         function loadChatMessages(chatId) {
+            if (!db) return;
             activeChatRef = ref(db, 'chats/' + chatId);
             onChildAdded(activeChatRef, (snapshot) => {
                 const msg = snapshot.val();
@@ -758,14 +747,14 @@
         }
 
         window.closeChat = function() { 
-            if (activeChatRef) off(activeChatRef);
+            if (activeChatRef && db) off(activeChatRef);
             document.getElementById('chatModal').classList.add('hidden'); 
         };
 
         window.sendMessage = function() {
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
-            if(!text || !currentChatProvider) return;
+            if(!text || !currentChatProvider || !db) return;
             
             const chatId = currentChatProvider.replace(/\s+/g, '_').toLowerCase();
             const chatListRef = ref(db, 'chats/' + chatId);
@@ -851,6 +840,7 @@
 
         document.addEventListener('DOMContentLoaded', () => { 
             getUserLocation();
+            filterProviders();
             updateNotifBadge();
         });
     </script>
