@@ -301,14 +301,24 @@
         const db = getDatabase(app);
         let activeChatRef = null;
 
-        const STRIPE_PUBLISHABLE_KEY = "pk_live_YOUR_ACTUAL_LIVE_KEY_HERE";
-        const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
-        const elements = stripe.elements();
-        const cardElement = elements.create('card');
-        const chatCardElement = elements.create('card');
-        
+        let stripe = null;
+        let cardElement = null;
+        let chatCardElement = null;
         let cardMounted = false;
         let chatCardMounted = false;
+
+        try {
+            if (typeof Stripe !== 'undefined') {
+                const STRIPE_PUBLISHABLE_KEY = "pk_live_YOUR_ACTUAL_LIVE_KEY_HERE";
+                stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+                const elements = stripe.elements();
+                cardElement = elements.create('card');
+                chatCardElement = elements.create('card');
+            }
+        } catch (e) {
+            console.log("Stripe initialization skipped:", e);
+        }
+        
         let currentLang = 'en';
         let userLat = null;
         let userLng = null;
@@ -319,9 +329,9 @@
         const ADMIN_EMAIL = "isaiahcung6@gmail.com";
         const ADMIN_NAME = "isaiah cung";
 
-        if (!localStorage.getItem('nf_v5_cleaned')) {
+        if (!localStorage.getItem('nf_v6_cleaned')) {
             localStorage.removeItem('nf_providers');
-            localStorage.setItem('nf_v5_cleaned', 'true');
+            localStorage.setItem('nf_v6_cleaned', 'true');
         }
 
         let realOnlyDefault = [
@@ -365,7 +375,7 @@
             }
         }
 
-        function openNotificationModal() {
+        window.openNotificationModal = function() {
             const listContainer = document.getElementById('notificationList');
             const providerNotifs = (currentChatProvider && notifications[currentChatProvider]) ? notifications[currentChatProvider] : [];
 
@@ -390,20 +400,20 @@
                 `).join('');
             }
             document.getElementById('notificationModal').classList.remove('hidden');
-        }
+        };
 
-        function closeNotificationModal() {
+        window.closeNotificationModal = function() {
             document.getElementById('notificationModal').classList.add('hidden');
-        }
+        };
 
-        function clearNotifications() {
+        window.clearNotifications = function() {
             if (currentChatProvider) {
                 notifications[currentChatProvider] = [];
                 localStorage.setItem('nf_notifications', JSON.stringify(notifications));
                 openNotificationModal();
                 updateNotifBadge();
             }
-        }
+        };
 
         window.previewImage = function(event) {
             const file = event.target.files[0];
@@ -426,9 +436,11 @@
             if (selectedPlan === 'vip') {
                 paymentSection.classList.remove('hidden');
                 submitBtn.innerText = "Pay $25.00 & Get Lifetime VIP";
-                if (!cardMounted) {
-                    cardElement.mount('#card-element');
-                    cardMounted = true;
+                if (cardElement && !cardMounted) {
+                    try {
+                        cardElement.mount('#card-element');
+                        cardMounted = true;
+                    } catch(err) { console.log(err); }
                 }
             } else {
                 paymentSection.classList.add('hidden');
@@ -588,7 +600,7 @@
             const submitBtn = document.getElementById('submitBtn');
             const statusMsg = document.getElementById('statusMessage');
 
-            if (!editId && selectedPlan === 'vip') {
+            if (!editId && selectedPlan === 'vip' && stripe && cardElement) {
                 submitBtn.disabled = true;
                 statusMsg.innerText = "";
                 submitBtn.innerText = "Processing VIP Payment ($25.00)...";
@@ -601,11 +613,11 @@
                     window.updateListingFeeUI();
                     return;
                 }
+            }
 
-                if (!vipMembers.includes(providerName.toLowerCase())) {
-                    vipMembers.push(providerName.toLowerCase());
-                    localStorage.setItem('nf_vip_members', JSON.stringify(vipMembers));
-                }
+            if (!vipMembers.includes(providerName.toLowerCase()) && selectedPlan === 'vip') {
+                vipMembers.push(providerName.toLowerCase());
+                localStorage.setItem('nf_vip_members', JSON.stringify(vipMembers));
             }
 
             const isAlreadyVip = vipMembers.includes(providerName.toLowerCase()) || selectedPlan === 'vip';
@@ -714,9 +726,11 @@
                 document.getElementById('bookingFeeTitle').innerHTML = `<i class="fa-solid fa-file-invoice-dollar mr-1 text-amber-600"></i> New Job Lead Fee (${feeAmount} - ${isVipProvider ? 'VIP Discount' : 'Standard'})`;
                 document.getElementById('payJobBtn').innerText = `Pay ${feeAmount} & Unlock Job Chat`;
 
-                if (!chatCardMounted) {
-                    chatCardElement.mount('#chat-card-element');
-                    chatCardMounted = true;
+                if (chatCardElement && !chatCardMounted) {
+                    try {
+                        chatCardElement.mount('#chat-card-element');
+                        chatCardMounted = true;
+                    } catch(err) { console.log(err); }
                 }
             }
 
@@ -731,12 +745,14 @@
             payBtn.disabled = true;
             payBtn.innerText = `Processing ${feeText} Job Fee...`;
 
-            const stripeRes = await stripe.createToken(chatCardElement, { name: currentChatProvider });
-            if (stripeRes.error) {
-                alert(stripeRes.error.message);
-                payBtn.disabled = false;
-                payBtn.innerText = `Pay ${feeText} & Unlock Job Chat`;
-                return;
+            if (stripe && chatCardElement) {
+                const stripeRes = await stripe.createToken(chatCardElement, { name: currentChatProvider });
+                if (stripeRes.error) {
+                    alert(stripeRes.error.message);
+                    payBtn.disabled = false;
+                    payBtn.innerText = `Pay ${feeText} & Unlock Job Chat`;
+                    return;
+                }
             }
 
             const chatId = currentChatProvider.replace(/\s+/g, '_').toLowerCase();
