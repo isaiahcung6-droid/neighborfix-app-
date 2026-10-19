@@ -342,39 +342,22 @@
         const ADMIN_EMAIL = "isaiahcung6@gmail.com";
         const ADMIN_NAME = "isaiah cung";
 
-        // Forced clean key to reset legacy local storage
-        if (!localStorage.getItem('nf_v11_cleaned')) {
-            localStorage.removeItem('nf_providers');
-            localStorage.removeItem('nf_vip_members');
-            localStorage.removeItem('nf_paid_job_leads');
-            localStorage.removeItem('nf_notifications');
-            localStorage.setItem('nf_v11_cleaned', 'true');
+        // Forced absolute wipe version key
+        if (!localStorage.getItem('nf_v12_wipe_all')) {
+            localStorage.clear();
+            localStorage.setItem('nf_v12_wipe_all', 'true');
         }
 
-        let realOnlyDefault = [
-            { id: 1, name: "Rising Star Music Studio", category: "music_class", title: "Guitar, Drums & Vocal Training Classes", rate: "$35/hr", lat: 39.6137, lng: -86.1064, rating: "5.0", phone: "3173587342", desc: "Professional music lessons covering electric/bass guitar (BOSS ME-25 effects), electric/acoustic drum kits, and vocal training for all skill levels.", isVip: true, active: true, img: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=150&q=80" },
-            { id: 2, name: "Isaiah Cung", category: "sound", title: "Pro Sound Engineering & Live Streaming", rate: "$40/hr", lat: 39.6137, lng: -86.1064, rating: "5.0", phone: "3173587342", desc: "Expert sound engineering, multitrack recording (Reaper/MixPad), digital mixing console setup (Behringer Wing/StudioLive), and professional live streaming setup.", isVip: true, active: true, img: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=150&q=80" },
-            { id: 3, name: "Rising Star Studio", category: "sound", title: "Live Streaming & Audio Production", rate: "$35/hr", lat: 39.6200, lng: -86.1100, rating: "5.0", phone: "3173587342", desc: "Full-service live streaming production, PTZ camera integration, wireless in-ear monitoring setup, and professional acoustic mixing.", isVip: true, active: true, img: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=150&q=80" },
-            { id: 4, name: "Isaiah Cung", category: "security", title: "CCTV Camera Installation", rate: "$35/hr", lat: 39.6137, lng: -86.1064, rating: "5.0", phone: "3173587342", desc: "Professional CCTV camera installation service (Labor only - Customer provides equipment). Expert mounting, wiring, and mobile app setup.", isVip: true, active: true, img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" }
-        ];
+        // Completely empty providers array (No default listings, clean slate)
+        let providers = JSON.parse(localStorage.getItem('nf_providers')) || [];
 
-        let loadedProviders = JSON.parse(localStorage.getItem('nf_providers'));
-        if (!loadedProviders || loadedProviders.length === 0) {
-            loadedProviders = realOnlyDefault;
-            localStorage.setItem('nf_providers', JSON.stringify(realOnlyDefault));
-        }
-        let providers = loadedProviders;
-
-        let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || ["isaiah cung", "rising star music studio", "rising star studio"];
+        let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || ["isaiah cung"];
         let paidJobLeads = JSON.parse(localStorage.getItem('nf_paid_job_leads')) || {};
         let notifications = JSON.parse(localStorage.getItem('nf_notifications')) || {};
 
         window.deleteAccountData = function() {
             if (confirm("Are you sure you want to delete your account data and reset listings?")) {
-                localStorage.removeItem('nf_providers');
-                localStorage.removeItem('nf_vip_members');
-                localStorage.removeItem('nf_paid_job_leads');
-                localStorage.removeItem('nf_notifications');
+                localStorage.clear();
                 alert("Account data successfully deleted and reset.");
                 location.reload();
             }
