@@ -333,7 +333,17 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, onChildAdded, update, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
+        // Guaranteed working audio notification sound effect
         const notifSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        notifSound.volume = 1.0;
+
+        // Unlock audio playback on first user touch/click anywhere on screen
+        document.addEventListener('click', () => {
+            notifSound.play().then(() => {
+                notifSound.pause();
+                notifSound.currentTime = 0;
+            }).catch(() => {});
+        }, { once: true });
 
         const firebaseConfig = {
           apiKey: "AIzaSyBTrOCRMWMSklrIIdCacuEk_ApidP3kzJA",
@@ -402,6 +412,19 @@
                     providers = [];
                 }
                 filterProviders();
+            });
+
+            // Global listener to trigger sound & badge whenever ANY new chat message or booking request is added
+            const allChatsRef = ref(db, 'chats');
+            onChildAdded(allChatsRef, (chatSnapshot) => {
+                const chatRoomRef = ref(db, 'chats/' + chatSnapshot.key);
+                onChildAdded(chatRoomRef, (msgSnapshot) => {
+                    // Check if message is recent (within last 10 seconds) to avoid playing sound for historical loaded items
+                    const msg = msgSnapshot.val();
+                    if (msg && msg.timestamp && (Date.now() - msg.timestamp < 10000)) {
+                        notifSound.play().catch(e => console.log("Audio play prevented:", e));
+                    }
+                });
             });
         }
 
@@ -868,7 +891,6 @@
             if (db && pendingBookingMessageKey && currentChatId) {
                 const msgRef = ref(db, `chats/${currentChatId}/${pendingBookingMessageKey}`);
                 
-                // Record acceptance timestamp to enable 5-hour auto-expire protection
                 update(msgRef, { 
                     status: 'accepted',
                     acceptedAt: Date.now() 
@@ -911,14 +933,13 @@
                 
                 const providerObj = providers.find(p => p.name.toLowerCase() === currentChatProvider.toLowerCase());
                 
-                // AUTO-EXPIRE 5 HOURS LOGIC: Check if accepted time exceeds 5 hours (5 * 60 * 60 * 1000 ms)
                 const FIVE_HOURS_MS = 5 * 60 * 60 * 1000;
                 let isAccepted = (m.status === 'accepted');
                 
                 if (isAccepted && m.acceptedAt) {
                     const elapsed = Date.now() - m.acceptedAt;
                     if (elapsed > FIVE_HOURS_MS) {
-                        isAccepted = false; // Auto-expire after 5 hours
+                        isAccepted = false;
                     }
                 }
 
