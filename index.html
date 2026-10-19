@@ -559,6 +559,13 @@
                 const distanceStr = (userLat && userLng) ? calculateDistance(userLat, userLng, p.lat, p.lng) : "0.8 mi";
                 const imgUrl = p.img || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80";
 
+                // Check if current device/user is the owner or admin to show Edit button
+                const inputName = document.getElementById('pName').value.trim().toLowerCase();
+                const isOwnerOrAdmin = ADMIN_LIST.includes(inputName) && (inputName === p.name.toLowerCase());
+                // Alternatively, allow editing if user matches provider name or is admin
+                const currentUser = (document.getElementById('pName').value || "").trim().toLowerCase();
+                const canEdit = ADMIN_LIST.includes(currentUser) || (currentUser && currentUser === p.name.toLowerCase());
+
                 return `
                 <div class="provider-card bg-white border ${p.isVip ? 'border-amber-300 ring-1 ring-amber-200' : 'border-slate-100'} rounded-2xl p-4 shadow-sm relative">
                     ${p.isVip ? '<span class="absolute -top-2.5 right-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-sm"><i class="fa-solid fa-crown mr-1"></i> VIP Featured</span>' : ''}
@@ -589,9 +596,10 @@
                         <a href="tel:${p.phone}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center justify-center">
                             <i class="fa-solid fa-phone"></i>
                         </a>
+                        ${canEdit ? `
                         <button onclick="openEditModal('${p.id}')" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center justify-center cursor-pointer" title="Edit Profile">
                             <i class="fa-solid fa-pen-to-square"></i>
-                        </button>
+                        </button>` : ''}
                     </div>
                 </div>
             `}).join('');
