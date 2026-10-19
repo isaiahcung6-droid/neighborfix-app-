@@ -868,7 +868,11 @@
             if (db && pendingBookingMessageKey && currentChatId) {
                 const msgRef = ref(db, `chats/${currentChatId}/${pendingBookingMessageKey}`);
                 
-                update(msgRef, { status: 'accepted' });
+                // Record acceptance timestamp to enable 5-hour auto-expire protection
+                update(msgRef, { 
+                    status: 'accepted',
+                    acceptedAt: Date.now() 
+                });
                 addNotification(currentChatProvider, `Booking confirmed and lead unlocked successfully!`);
             }
 
@@ -907,13 +911,22 @@
                 
                 const providerObj = providers.find(p => p.name.toLowerCase() === currentChatProvider.toLowerCase());
                 
-                // STRENGHTENED SHIELD: Never render phone number inside DB string unless explicitly accepted via live action
-                const isAccepted = (m.status === 'accepted');
+                // AUTO-EXPIRE 5 HOURS LOGIC: Check if accepted time exceeds 5 hours (5 * 60 * 60 * 1000 ms)
+                const FIVE_HOURS_MS = 5 * 60 * 60 * 1000;
+                let isAccepted = (m.status === 'accepted');
+                
+                if (isAccepted && m.acceptedAt) {
+                    const elapsed = Date.now() - m.acceptedAt;
+                    if (elapsed > FIVE_HOURS_MS) {
+                        isAccepted = false; // Auto-expire after 5 hours
+                    }
+                }
+
                 const rawPhone = providerObj ? providerObj.phone : "";
                 const displayPhone = (isAccepted && rawPhone) ? rawPhone : "Hidden until accepted";
 
                 let statusBadge = `<span class="bg-amber-200 text-amber-900 text-[10px] font-bold px-2.5 py-1 rounded-full">Pending Response</span>`;
-                if (isAccepted) statusBadge = `<span class="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-circle-check mr-1"></i> Booking Confirmed</span>`;
+                if (isAccepted) statusBadge = `<span class="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-circle-check mr-1"></i> Booking Confirmed (5h Auto-Lock)</span>`;
                 if (m.status === 'cancelled') statusBadge = `<span class="bg-rose-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-circle-xmark mr-1"></i> Cancelled</span>`;
 
                 card.innerHTML = `
@@ -929,7 +942,7 @@
 
                     ${isAccepted ? `
                         <div class="bg-emerald-100/70 border border-emerald-300 rounded-xl p-2.5 text-center mt-2">
-                            <p class="text-[11px] font-bold text-emerald-900 mb-1"><i class="fa-solid fa-phone mr-1"></i> Provider Contact Unlocked:</p>
+                            <p class="text-[11px] font-bold text-emerald-900 mb-1"><i class="fa-solid fa-phone mr-1"></i> Provider Contact Unlocked (Auto-locks in 5 hrs):</p>
                             <a href="tel:${displayPhone}" class="text-xs font-extrabold text-emerald-700 underline">${displayPhone}</a>
                         </div>
                     ` : `
@@ -938,7 +951,7 @@
                         </div>
                     `}
 
-                    ${m.status === 'pending' ? `
+                    ${(!isAccepted && m.status !== 'cancelled') ? `
                         <div class="flex space-x-2 pt-2 mt-2 border-t border-amber-200/60">
                             <button onclick="cancelBookingRequest('${msgKey}')" class="flex-1 bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold py-2 rounded-xl text-xs transition">Decline</button>
                             <button onclick="initiateBookingAccept('${msgKey}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs shadow-sm transition">Accept Request</button>
