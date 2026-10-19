@@ -311,15 +311,13 @@
         const ADMIN_EMAIL = "isaiahcung6@gmail.com";
         const ADMIN_NAME = "isaiah cung";
 
+        // Only keep real profile (Isaiah Cung) and clear all fake demo profiles
         let providers = JSON.parse(localStorage.getItem('nf_providers')) || [
-            { id: 1, name: "David Miller", category: "security", title: "CCTV & Smart Lock Setup", rate: "$50/hr", lat: 39.6137, lng: -86.1064, rating: "5.0", phone: "1234567894", desc: "Expert setup for Ring cameras, CCTV security systems, smart video doorbells, and electronic locks.", isVip: true, active: true, img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80" },
-            { id: 2, name: "Carlos Rodriguez", category: "plumbing", title: "Plumbing & Pipe Repair", rate: "$35/hr", lat: 39.6137, lng: -86.1064, rating: "4.9", phone: "1234567890", desc: "Experienced local plumber available for quick emergency fixes, pipe replacements, and drain cleaning.", isVip: true, active: true, img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" },
-            { id: 3, name: "Isaiah Cung", category: "security", title: "CCTV Camera Installation", rate: "$35/hr", lat: 39.6137, lng: -86.1064, rating: "5.0", phone: "3173587342", desc: "Professional CCTV camera installation service (Labor only - Customer provides equipment). Expert mounting, wiring, and mobile app setup.", isVip: true, active: true, img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" },
-            { id: 4, name: "Daw Khin Aye", category: "cleaning", title: "Home & Deep Cleaning", rate: "$25/hr", lat: 39.6237, lng: -86.1164, rating: "5.0", phone: "1234567891", desc: "Friendly house cleaning services, kitchen & bathroom deep cleans with eco-friendly products.", isVip: false, active: true, img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80" }
+            { id: 3, name: "Isaiah Cung", category: "security", title: "CCTV Camera Installation", rate: "$35/hr", lat: 39.6137, lng: -86.1064, rating: "5.0", phone: "3173587342", desc: "Professional CCTV camera installation service (Labor only - Customer provides equipment). Expert mounting, wiring, and mobile app setup.", isVip: true, active: true, img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" }
         ];
 
         let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || ["isaiah cung"];
-        let notifications = JSON.parse(localStorage.getItem('nf_notifications')) || [];
+        let notifications = JSON.parse(localStorage.getItem('nf_notifications')) || {};
 
         function addNotification(providerName, text) {
             if (!notifications[providerName]) {
