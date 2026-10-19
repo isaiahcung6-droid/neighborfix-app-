@@ -311,10 +311,23 @@
         const ADMIN_EMAIL = "isaiahcung6@gmail.com";
         const ADMIN_NAME = "isaiah cung";
 
-        // Only keep real profile (Isaiah Cung) and clear all fake demo profiles
-        let providers = JSON.parse(localStorage.getItem('nf_providers')) || [
+        // Force Clear Old Fake Accounts Cache from Browser Memory
+        if (!localStorage.getItem('nf_v2_cleaned')) {
+            localStorage.removeItem('nf_providers');
+            localStorage.setItem('nf_v2_cleaned', 'true');
+        }
+
+        // Real Profile (Isaiah Cung) Only
+        let realOnlyDefault = [
             { id: 3, name: "Isaiah Cung", category: "security", title: "CCTV Camera Installation", rate: "$35/hr", lat: 39.6137, lng: -86.1064, rating: "5.0", phone: "3173587342", desc: "Professional CCTV camera installation service (Labor only - Customer provides equipment). Expert mounting, wiring, and mobile app setup.", isVip: true, active: true, img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" }
         ];
+
+        let loadedProviders = JSON.parse(localStorage.getItem('nf_providers'));
+        if (!loadedProviders || loadedProviders.some(p => p.name === "David Miller" || p.name === "Carlos Rodriguez")) {
+            loadedProviders = realOnlyDefault;
+            localStorage.setItem('nf_providers', JSON.stringify(realOnlyDefault));
+        }
+        let providers = loadedProviders;
 
         let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || ["isaiah cung"];
         let notifications = JSON.parse(localStorage.getItem('nf_notifications')) || {};
