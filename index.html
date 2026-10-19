@@ -241,14 +241,14 @@
         </div>
     </div>
 
-    <!-- Live Chat Modal (Integrated with Firebase Realtime Database) -->
+    <!-- Live Chat Modal with Auto-Translate Feature -->
     <div id="chatModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-3">
                 <h3 id="chatTitle" class="font-bold text-slate-900 text-sm">Direct Chat</h3>
                 <button onclick="closeChat()" class="text-slate-400 hover:text-slate-600 text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div id="chatMessages" class="h-52 overflow-y-auto bg-slate-50 rounded-xl p-3 mb-3 space-y-2 text-xs">
+            <div id="chatMessages" class="h-56 overflow-y-auto bg-slate-50 rounded-xl p-3 mb-3 space-y-3 text-xs">
                 <!-- Realtime chat messages will be loaded here -->
             </div>
             <div class="flex space-x-2">
@@ -272,7 +272,7 @@
         </div>
     </div>
 
-    <!-- Script Logic (Firebase Realtime Sync Integrated) -->
+    <!-- Script Logic (Firebase Realtime Sync + Chat Translation) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, onChildAdded, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -317,7 +317,7 @@
             localStorage.setItem('nf_v2_cleaned', 'true');
         }
 
-        // Real Profile (Isaiah Cung) Only
+        // Real Profile Only
         let realOnlyDefault = [
             { id: 3, name: "Isaiah Cung", category: "security", title: "CCTV Camera Installation", rate: "$35/hr", lat: 39.6137, lng: -86.1064, rating: "5.0", phone: "3173587342", desc: "Professional CCTV camera installation service (Labor only - Customer provides equipment). Expert mounting, wiring, and mobile app setup.", isVip: true, active: true, img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" }
         ];
@@ -746,7 +746,6 @@
                 off(activeChatRef);
             }
 
-            // Using provider name as room identifier for real-time sync across devices
             const chatId = name.replace(/\s+/g, '_').toLowerCase();
             activeChatRef = ref(db, 'chats/' + chatId);
 
@@ -783,17 +782,54 @@
             addNotification(currentChatProvider, `New message sent: "${text}"`);
         };
 
+        // Live Chat Message Append + Realtime Translation API
         function appendMessageToUI(m) {
             const msgBox = document.getElementById('chatMessages');
+            const wrapperDiv = document.createElement('div');
+            wrapperDiv.className = m.sender === 'user' ? "flex flex-col items-end" : "flex flex-col items-start";
+
             const msgDiv = document.createElement('div');
-            
             if (m.sender === 'user') {
-                msgDiv.className = "bg-emerald-600 text-white p-2.5 rounded-xl shadow-sm max-w-[80%] ml-auto text-xs";
+                msgDiv.className = "bg-emerald-600 text-white p-2.5 rounded-2xl shadow-sm max-w-[85%] text-xs";
             } else {
-                msgDiv.className = "bg-white p-2.5 rounded-xl shadow-sm max-w-[80%] text-slate-600 text-xs";
+                msgDiv.className = "bg-white p-2.5 rounded-2xl shadow-sm border border-slate-100 max-w-[85%] text-slate-700 text-xs";
             }
-            msgDiv.innerText = m.text;
-            msgBox.appendChild(msgDiv);
+            
+            const textSpan = document.createElement('p');
+            textSpan.innerText = m.text;
+            msgDiv.appendChild(textSpan);
+
+            // Translation Button
+            const transBtn = document.createElement('button');
+            transBtn.className = "text-[9px] text-slate-400 hover:text-emerald-600 mt-1 flex items-center font-medium underline";
+            transBtn.innerHTML = `<i class="fa-solid fa-language mr-1"></i> Translate`;
+            
+            const transResultDiv = document.createElement('p');
+            transResultDiv.className = "text-[11px] text-emerald-800 font-semibold mt-1.5 pt-1 border-t border-slate-200/50 hidden";
+
+            transBtn.onclick = async function() {
+                transBtn.innerText = "Translating...";
+                const targetLang = (currentLang === 'my') ? 'my' : (currentLang === 'es' ? 'es' : (currentLang === 'hi' ? 'hi' : 'en'));
+                try {
+                    const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(m.text)}`);
+                    const data = await res.json();
+                    if (data && data[0] && data[0][0]) {
+                        transResultDiv.innerText = "🌐 " + data[0][0][0];
+                        transResultDiv.classList.remove('hidden');
+                        transBtn.innerText = "Translated ✓";
+                    } else {
+                        transBtn.innerText = "Translation Failed";
+                    }
+                } catch(e) {
+                    transBtn.innerText = "Translation Error";
+                }
+            };
+
+            msgDiv.appendChild(transResultDiv);
+            wrapperDiv.appendChild(msgDiv);
+            wrapperDiv.appendChild(transBtn);
+
+            msgBox.appendChild(wrapperDiv);
             msgBox.scrollTop = msgBox.scrollHeight;
         }
 
