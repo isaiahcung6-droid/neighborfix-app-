@@ -417,6 +417,7 @@
                 loggedInProviderName = val;
                 localStorage.setItem('nf_logged_provider', val);
                 updateNotifBadge();
+                filterProviders();
             }
         };
 
@@ -535,7 +536,7 @@
             const notifsArray = Object.entries(providerNotifsObj).map(([id, val]) => ({ id, ...val })).sort((a, b) => b.timestamp - a.timestamp);
 
             if (notifsArray.length === 0) {
-                listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-6">No incoming booking alerts found for "${loggedInProviderName}".</p>`;
+                listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-6">No incoming chat or booking alerts found for "${loggedInProviderName}".</p>`;
             } else {
                 listContainer.innerHTML = notifsArray.map(n => `
                     <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col space-y-1 shadow-sm">
@@ -650,8 +651,12 @@
                 const imgUrl = p.img || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80";
                 const providerLocation = p.location || "Greenwood, Indiana, USA";
 
-                const currentUser = (document.getElementById('pName').value || "").trim().toLowerCase();
-                const canEdit = ADMIN_LIST.includes(currentUser) || (currentUser && currentUser === p.name.toLowerCase());
+                // Strict Ownership Security Check for Editing
+                const currentUser = (loggedInProviderName || "").trim().toLowerCase();
+                const isOwner = currentUser && (currentUser === p.name.trim().toLowerCase());
+                const isAdmin = ADMIN_LIST.includes(currentUser);
+                const canEdit = isOwner || isAdmin;
+
                 const encodedName = btoa(encodeURIComponent(p.name));
 
                 const cardDiv = document.createElement('div');
@@ -746,6 +751,15 @@
             const p = providers.find(item => item.id == id);
             if (!p) return;
 
+            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
+            const isOwner = currentUser && (currentUser === p.name.trim().toLowerCase());
+            const isAdmin = ADMIN_LIST.includes(currentUser);
+
+            if (!isOwner && !isAdmin) {
+                alert("Unauthorized: You can only edit your own provider listing!");
+                return;
+            }
+
             document.getElementById('editProviderId').value = p.id;
             document.getElementById('modalTitle').innerText = "Edit Your Profile / Listing";
             document.getElementById('pName').value = p.name;
@@ -813,7 +827,7 @@
                 loggedInProviderName = providerName;
                 localStorage.setItem('nf_logged_provider', providerName);
                 
-                // Listing တင်လိုက်ရုံဖြင့် အလဟဿ Notification မထွက်အောင် ဖယ်ရှားထားပါသည်
+                // Listing တင်လိုက်ရုံဖြင့် Notification လုံးဝ မထွက်စေရန် ဖြုတ်ထားပါသည်
                 alert("Listing successfully published globally!");
             } catch(err) {
                 console.error("Save Error:", err);
@@ -864,7 +878,15 @@
             }
 
             const providerKey = name.replace(/\s+/g, '_').toLowerCase();
-            currentChatId = `${providerKey}_shared_chat`;
+            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
+            const isProviderSelf = currentUser && (currentUser === name.trim().toLowerCase());
+
+            // Chat Privacy Isolation: Provider ဝင်လျှင် shared chat၊ Customer ဘက်မှဆိုလျှင် deviceSessionId ဖြင့် သီးသန့် ID သုံးမည်
+            if (isProviderSelf) {
+                currentChatId = `${providerKey}_shared_chat`;
+            } else {
+                currentChatId = `${providerKey}_${deviceSessionId}`;
+            }
 
             loadChatMessages(currentChatId);
             document.getElementById('chatModal').classList.remove('hidden');
@@ -893,7 +915,7 @@
 
             input.value = '';
             
-            // Chat စာတိုပေးပို့မှသာ Provider ဆီသို့ Notification သီးသန့်ပေးပို့မည်
+            // Chat Message ပို့မှသာ Provider ဆီသို့ Notification ဝင်မည်
             addCloudNotification(currentChatProvider, `💬 New message from customer: "${text}"`);
         };
 
@@ -926,7 +948,7 @@
             document.getElementById('bookingNoteInput').value = '';
             document.getElementById('bookingDrawer').classList.add('hidden');
             
-            // Booking တောင်းဆိုမှသာ Provider ဆီသို့ Notification သီးသန့်ပေးပို့မည်
+            // Booking Request တောင်းဆိုမှသာ Provider ဆီသို့ Notification ဝင်မည်
             addCloudNotification(currentChatProvider, `📅 New Job Request for ${dateVal} at ${timeVal}!`);
             alert("Booking request sent successfully to provider!");
         };
