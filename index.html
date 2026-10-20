@@ -841,10 +841,23 @@
         };
 
         window.filterProviders = function() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
+            const rawQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+            // Flexible keyword processing: handles plural/singular and typos like "sounds system" vs "sound system"
+            const queryWords = rawQuery.replace(/s\b/g, '').split(/\s+/).filter(w => w.length > 0);
+
             const filtered = providers.filter(p => {
                 const matchesCat = (currentCategory === 'all' || p.category === currentCategory);
-                const matchesSearch = p.name.toLowerCase().includes(query) || p.title.toLowerCase().includes(query) || (p.location && p.location.toLowerCase().includes(query)) || p.desc.toLowerCase().includes(query);
+                
+                const fullText = (p.name + " " + p.title + " " + (p.location || "") + " " + p.desc + " " + p.category).toLowerCase();
+                const normalizedFullText = fullText.replace(/s\b/g, '');
+
+                if (rawQuery === "") return matchesCat;
+
+                let matchesSearch = fullText.includes(rawQuery) || normalizedFullText.includes(rawQuery.replace(/s\b/g, ''));
+                if (!matchesSearch && queryWords.length > 0) {
+                    matchesSearch = queryWords.every(word => normalizedFullText.includes(word));
+                }
+
                 return matchesCat && matchesSearch;
             });
             renderProviders(filtered);
