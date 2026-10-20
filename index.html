@@ -37,7 +37,7 @@
                 <span id="notifBadge" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
             </button>
 
-            <!-- Fast Instant Language Switcher -->
+            <!-- Language Switcher -->
             <select id="langSwitch" onchange="changeLanguage(this.value)" class="bg-slate-100 border border-slate-200 text-slate-700 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium cursor-pointer">
                 <option value="en">English</option>
                 <option value="my">မြန်မာ</option>
@@ -59,7 +59,7 @@
             <button onclick="getUserLocation()" class="bg-emerald-600 text-white font-bold px-2.5 py-1 rounded-lg text-[10px] hover:bg-emerald-700 cursor-pointer">Refresh GPS</button>
         </div>
 
-        <!-- Fast Debounced Search Bar -->
+        <!-- Search Bar -->
         <div class="relative mb-5">
             <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
                 <i class="fa-solid fa-magnifying-glass"></i>
@@ -67,7 +67,7 @@
             <input type="text" id="searchInput" oninput="debounceFilter()" placeholder="Search photo, video, Greenwood, NC..." data-i18n-placeholder="search_placeholder" class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm">
         </div>
 
-        <!-- Fast Instant Categories Options -->
+        <!-- Categories Options -->
         <div class="flex space-x-2 overflow-x-auto pb-2 mb-5 no-scrollbar">
             <button onclick="filterCat(event, 'all')" id="catBtnAll" class="cat-btn active bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm shadow-emerald-200 transition cursor-pointer" data-i18n="cat_all">All Services</button>
             <button onclick="filterCat(event, 'media')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition cursor-pointer"><i class="fa-solid fa-camera text-emerald-600 mr-1"></i> <span data-i18n="cat_media">Video & Photography</span></button>
@@ -334,7 +334,7 @@
         </div>
     </div>
 
-    <!-- Optimized Ultra-Fast Script Engine -->
+    <!-- Ultra-Fast Script Engine with Unified Shared Chat Room -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, query, limitToLast, update, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -403,7 +403,6 @@
             onValue(cloudProvidersRef, (snapshot) => {
                 const data = snapshot.val();
                 providers = data ? Object.values(data) : [];
-                // Render DOM once, then show/hide elements fast
                 renderProvidersFull(providers);
                 filterProviders();
             }, { onlyOnce: false });
@@ -514,12 +513,11 @@
                         gpsText.innerText = `GPS Active (${position.coords.latitude.toFixed(2)}, ${position.coords.longitude.toFixed(2)})`;
                     },
                     () => { gpsText.innerText = "GPS Default (Greenwood, IN)"; },
-                    { timeout: 3000 }
+                    { timeout: 2000 }
                 );
             }
         };
 
-        // Ultra-Fast Instant Home Reset
         window.resetToHomeAllServices = function() {
             currentCategory = 'all';
             const searchInput = document.getElementById('searchInput');
@@ -539,7 +537,6 @@
             window.scrollTo({top: 0, behavior: 'instant'});
         };
 
-        // Complete DOM Build
         function renderProvidersFull(list) {
             const container = document.getElementById('providerList');
             if (!list || list.length === 0) {
@@ -607,7 +604,6 @@
             window.changeLanguage(currentLang);
         }
 
-        // Fast Visibility Toggle (Zero Delay)
         window.filterProviders = function() {
             const rawQuery = (document.getElementById('searchInput').value || "").toLowerCase().trim();
             const cardItems = document.querySelectorAll('.provider-card-item');
@@ -778,10 +774,8 @@
             }
 
             const providerKey = name.replace(/\s+/g, '_').toLowerCase();
-            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
-            const isProviderSelf = currentUser && (currentUser === name.trim().toLowerCase());
-
-            currentChatId = isProviderSelf ? `${providerKey}_shared_chat` : `${providerKey}_${deviceSessionId}`;
+            // FIXED: Use a single unified chat room for both Customer and Provider so messages sync directly.
+            currentChatId = `shared_chat_${providerKey}`;
 
             loadChatMessages(currentChatId);
             document.getElementById('chatModal').classList.remove('hidden');
@@ -796,15 +790,22 @@
             const text = input.value.trim();
             if (!text || !db || !currentChatId) return;
 
+            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
+            const isProviderSelf = currentUser && (currentUser === currentChatProvider.trim().toLowerCase());
+            const senderType = isProviderSelf ? 'provider' : 'user';
+
             push(ref(db, 'chats/' + currentChatId), {
-                sender: 'user',
+                sender: senderType,
+                senderName: loggedInProviderName,
                 type: 'text_message',
                 text: text,
                 timestamp: Date.now()
             });
 
             input.value = '';
-            addCloudNotification(currentChatProvider, `💬 New message: "${text}"`);
+            if (senderType === 'user') {
+                addCloudNotification(currentChatProvider, `💬 New message from customer: "${text}"`);
+            }
         };
 
         window.sendBookingRequest = function() {
@@ -821,6 +822,7 @@
 
             push(ref(db, 'chats/' + currentChatId), {
                 sender: 'user',
+                senderName: loggedInProviderName,
                 type: 'booking_request',
                 date: dateVal,
                 time: timeVal,
@@ -840,7 +842,7 @@
 
         function loadChatMessages(chatId) {
             if (!db) return;
-            activeChatRef = query(ref(db, 'chats/' + chatId), limitToLast(15));
+            activeChatRef = query(ref(db, 'chats/' + chatId), limitToLast(30));
             onValue(activeChatRef, (snapshot) => {
                 const data = snapshot.val();
                 const msgBox = document.getElementById('chatMessages');
@@ -924,9 +926,25 @@
             const wrapperDiv = document.createElement('div');
             wrapperDiv.className = "flex flex-col my-1.5";
 
+            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
+            const isProviderSelf = currentUser && (currentUser === currentChatProvider.trim().toLowerCase());
+            
+            // Correctly determine alignment based on sender type vs current viewer
+            let isMyMessage = false;
+            if (isProviderSelf) {
+                isMyMessage = (m.sender === 'provider');
+            } else {
+                isMyMessage = (m.sender === 'user');
+            }
+
             if (m.type === 'text_message') {
-                wrapperDiv.className += " items-start";
-                wrapperDiv.innerHTML = `<div class="bg-slate-200 text-slate-800 rounded-2xl px-3 py-2 text-xs max-w-[80%] shadow-sm">${m.text}</div>`;
+                if (isMyMessage) {
+                    wrapperDiv.className += " items-end";
+                    wrapperDiv.innerHTML = `<div class="bg-emerald-600 text-white rounded-2xl px-3 py-2 text-xs max-w-[80%] shadow-sm">${m.text}</div>`;
+                } else {
+                    wrapperDiv.className += " items-start";
+                    wrapperDiv.innerHTML = `<div class="bg-slate-200 text-slate-800 rounded-2xl px-3 py-2 text-xs max-w-[80%] shadow-sm">${m.text}</div>`;
+                }
                 msgBox.appendChild(wrapperDiv);
                 msgBox.scrollTop = msgBox.scrollHeight;
             } 
@@ -970,7 +988,7 @@
                         </div>
                     `}
 
-                    ${(!isAccepted && m.status !== 'cancelled') ? `
+                    ${(!isAccepted && m.status !== 'cancelled' && isProviderSelf) ? `
                         <div class="flex space-x-2 pt-2 mt-2 border-t border-amber-200/60">
                             <button type="button" class="decline-btn-action flex-1 bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold py-2 rounded-xl text-xs transition cursor-pointer">Decline</button>
                             <button type="button" class="accept-btn-action flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs shadow-sm transition cursor-pointer">Accept Request</button>
@@ -978,7 +996,7 @@
                     ` : ''}
                 `;
 
-                if (!isAccepted && m.status !== 'cancelled') {
+                if (!isAccepted && m.status !== 'cancelled' && isProviderSelf) {
                     card.querySelector('.decline-btn-action').onclick = () => window.cancelBookingRequest(msgKey);
                     card.querySelector('.accept-btn-action').onclick = () => window.initiateBookingAccept(msgKey);
                 }
@@ -989,7 +1007,6 @@
             }
         }
 
-        // Fast Category Switch (No Delay)
         window.filterCat = function(e, cat) {
             currentCategory = cat;
             const targetBtn = e.target.closest('button');
@@ -1006,13 +1023,12 @@
             filterProviders();
         };
 
-        // Instant Debounce
         let searchTimeout = null;
         window.debounceFilter = function() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 filterProviders();
-            }, 30);
+            }, 10);
         };
 
         const translations = {
@@ -1022,7 +1038,6 @@
             hi: { subtitle: "स्थानीय सेवा बाज़ार", search_placeholder: "फोटो, वीडियो, स्थान खोजें...", cat_all: "सभी सेवाएं", cat_media: "वीडियो और फोटोग्राफी", cat_music_class: "संगीत कक्षाएं", cat_sound: "साउंड और लाइव स्ट्रीम", cat_hvac: "इलेक्ट्रिकल और एसी", cat_roofing: "छत और पेंटिंग", cat_security: "होम सुरक्षा", cat_plumbing: "प्लंबिंग", cat_appliance: "उपकरण मरम्मत", cat_handyman: "हैंडीमैन", cat_cleaning: "घर की सफाई", cat_lawn: "लॉन और यार्ड", cat_towing: "टोइंग सेवा", cat_locksmith: "ताला मरम्मत", cat_moving: "मूविंग और हॉलिंग", verified_title: "सत्यापित नजदीकी सेवा प्रदाता", direct_chat: "चैट करें और पूछें", nav_home: "होम", clear_alerts: "सभी अलर्ट साफ़ करें" }
         };
 
-        // Instant Fast Translation
         window.changeLanguage = function(lang) {
             currentLang = lang;
             document.querySelectorAll('[data-i18n]').forEach(el => {
