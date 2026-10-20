@@ -1,339 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeighborFix - Local Services Marketplace</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Stripe JS SDK -->
-    <script src="https://js.stripe.com/v3/"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800 pb-28">
-
-    <!-- Header -->
-    <header class="bg-white border-b border-slate-100 sticky top-0 z-40 px-4 py-3 flex items-center justify-between shadow-sm">
-        <div class="flex items-center space-x-2">
-            <div class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md shadow-emerald-200">
-                <i class="fa-solid fa-hands-helping"></i>
-            </div>
-            <div>
-                <h1 class="font-bold text-lg leading-tight text-slate-900">NeighborFix</h1>
-                <p class="text-xs text-slate-500" data-i18n="subtitle">Local Services Marketplace</p>
-            </div>
-        </div>
-
-        <div class="flex items-center space-x-3">
-            <!-- Notification Bell Icon -->
-            <button onclick="openNotificationModal()" class="relative text-slate-600 hover:text-emerald-600 p-1.5 rounded-full bg-slate-100 cursor-pointer">
-                <i class="fa-solid fa-bell text-sm"></i>
-                <span id="notifBadge" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
-            </button>
-
-            <!-- Language Switcher -->
-            <select id="langSwitch" onchange="changeLanguage(this.value)" class="bg-slate-100 border border-slate-200 text-slate-700 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium">
-                <option value="en">English</option>
-                <option value="my">မြန်မာ</option>
-                <option value="es">Español</option>
-                <option value="hi">हिन्दी</option>
-            </select>
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="max-w-md mx-auto px-4 mt-5">
-        
-        <!-- GPS Status Banner -->
-        <div id="gpsStatus" class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 mb-4 flex items-center justify-between text-xs text-emerald-800 shadow-sm">
-            <div class="flex items-center space-x-2">
-                <i class="fa-solid fa-location-dot text-emerald-600 text-sm"></i>
-                <span id="gpsText">Finding your GPS location...</span>
-            </div>
-            <button onclick="getUserLocation()" class="bg-emerald-600 text-white font-bold px-2.5 py-1 rounded-lg text-[10px] hover:bg-emerald-700">Refresh GPS</button>
-        </div>
-
-        <!-- Search Bar -->
-        <div class="relative mb-5">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
-                <i class="fa-solid fa-magnifying-glass"></i>
-            </span>
-            <input type="text" id="searchInput" onkeyup="filterProviders()" placeholder="Search photo, video, music class, heater..." data-i18n-placeholder="search_placeholder" class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm">
-        </div>
-
-        <!-- Categories Options -->
-        <div class="flex space-x-2 overflow-x-auto pb-2 mb-5 no-scrollbar">
-            <button onclick="filterCat(event, 'all')" class="cat-btn active bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm shadow-emerald-200 transition" data-i18n="cat_all">All Services</button>
-            <button onclick="filterCat(event, 'media')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition"><i class="fa-solid fa-camera text-emerald-600 mr-1"></i> <span data-i18n="cat_media">Video & Photography</span></button>
-            <button onclick="filterCat(event, 'music_class')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition"><i class="fa-solid fa-music text-emerald-600 mr-1"></i> <span data-i18n="cat_music_class">Music Classes</span></button>
-            <button onclick="filterCat(event, 'sound')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition"><i class="fa-solid fa-microphone-lines text-emerald-600 mr-1"></i> <span data-i18n="cat_sound">Sound & Live Stream</span></button>
-            <button onclick="filterCat(event, 'hvac')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition"><i class="fa-solid fa-fire text-emerald-600 mr-1"></i> <span data-i18n="cat_hvac">Electrical, Heating & A/C</span></button>
-            <button onclick="filterCat(event, 'roofing')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_roofing">Roofing & Painting</button>
-            <button onclick="filterCat(event, 'security')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_security">Home Security</button>
-            <button onclick="filterCat(event, 'plumbing')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_plumbing">Plumbing</button>
-            <button onclick="filterCat(event, 'appliance')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_appliance">Appliance Repair</button>
-            <button onclick="filterCat(event, 'handyman')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_handyman">Handyman</button>
-            <button onclick="filterCat(event, 'cleaning')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_cleaning">Home Cleaning</button>
-            <button onclick="filterCat(event, 'lawn')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_lawn">Lawn & Yard</button>
-            <button onclick="filterCat(event, 'towing')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_towing">Towing Service</button>
-            <button onclick="filterCat(event, 'locksmith')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_locksmith">Locksmith</button>
-            <button onclick="filterCat(event, 'moving')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition" data-i18n="cat_moving">Moving & Hauling</button>
-        </div>
-
-        <!-- Providers List Header -->
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="font-bold text-slate-900 text-base" data-i18n="verified_title">Verified Nearby Providers</h2>
-            <span class="text-xs text-slate-500 font-medium" id="providerCount">0 providers</span>
-        </div>
-
-        <!-- Provider Cards Container -->
-        <div id="providerList" class="space-y-4"></div>
-
-        <!-- Danger Zone -->
-        <div class="mt-8 bg-rose-50 border border-rose-200 rounded-2xl p-4 text-center">
-            <h3 class="font-bold text-rose-900 text-xs mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Danger Zone</h3>
-            <p class="text-[11px] text-rose-700 mb-3">Permanently wipe stale database entries & reset local listings.</p>
-            <button onclick="deleteAccountData()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded-xl text-xs shadow transition cursor-pointer">
-                <i class="fa-solid fa-trash mr-1"></i> Clear Stale Database & Cache
-            </button>
-        </div>
-
-        <!-- Studio Branding Footer -->
-        <div class="mt-6 mb-4 text-center border-t border-slate-200/60 pt-5">
-            <p class="text-xs text-slate-400 font-medium">Powered & Media Supported by</p>
-            <p class="text-xs font-bold text-emerald-700 mt-0.5 tracking-wide">
-                <i class="fa-solid fa-compact-disc mr-1 text-emerald-600"></i> Rising Star Music Studio
-            </p>
-        </div>
-
-    </main>
-
-    <!-- Bottom Navigation Bar -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 py-2 px-6 flex justify-around items-center z-40 shadow-lg">
-        <button onclick="window.scrollTo({top:0, behavior:'smooth'})" class="flex flex-col items-center text-emerald-600 cursor-pointer">
-            <i class="fa-solid fa-house text-lg"></i>
-            <span class="text-[10px] font-semibold mt-1" data-i18n="nav_home">Home</span>
-        </button>
-        <button onclick="openPostModal()" class="w-12 h-12 bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-200 -mt-5 border-4 border-white active:scale-95 transition cursor-pointer">
-            <i class="fa-solid fa-plus text-lg"></i>
-        </button>
-        <button onclick="openNotificationModal()" class="flex flex-col items-center text-slate-400 hover:text-slate-600 relative cursor-pointer">
-            <i class="fa-solid fa-bell text-lg"></i>
-            <span class="text-[10px] font-medium mt-1">Alerts</span>
-        </button>
-    </nav>
-
-    <!-- Post / Edit Service Modal -->
-    <div id="postModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
-                <h3 id="modalTitle" class="font-bold text-slate-900 text-base">Post Your Service Listing</h3>
-                <button onclick="closePostModal()" class="text-slate-400 hover:text-slate-600 text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            
-            <form id="providerForm" onsubmit="saveProvider(event)" class="space-y-3">
-                <input type="hidden" id="editProviderId">
-
-                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-2" id="planSection">
-                    <label class="block text-xs font-bold text-amber-900 mb-1">Account Status / Promotion</label>
-                    <div class="grid grid-cols-2 gap-2 mt-2">
-                        <label class="cursor-pointer border border-slate-200 rounded-xl p-2.5 bg-white text-center flex flex-col items-center justify-center hover:border-emerald-500">
-                            <input type="radio" name="plan" value="standard" checked class="mb-1 text-emerald-600">
-                            <span class="text-xs font-bold text-slate-800">Standard Listing</span>
-                            <span class="text-[10px] font-semibold text-emerald-700">Free to Post ($10 Lead Fee)</span>
-                        </label>
-                        <label class="cursor-pointer border-2 border-amber-400 rounded-xl p-2.5 bg-amber-100/50 text-center flex flex-col items-center justify-center shadow-sm">
-                            <input type="radio" name="plan" value="vip" class="mb-1 text-amber-600">
-                            <span class="text-xs font-bold text-amber-800"><i class="fa-solid fa-crown text-amber-500 mr-1"></i> Lifetime VIP ($25)</span>
-                            <span class="text-[10px] font-semibold text-amber-700">$8 per accepted job</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Your Name / Business Name</label>
-                    <input type="text" id="pName" required onkeyup="updateListingFeeUI()" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Upload Profile Photo</label>
-                    <div class="flex items-center space-x-3 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                        <img id="profilePreview" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80" class="w-12 h-12 rounded-xl object-cover border border-slate-300">
-                        <div class="flex-1">
-                            <input type="file" id="pImageFile" accept="image/*" onchange="previewImage(event)" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer">
-                            <p class="text-[10px] text-slate-400 mt-1">Select photo from device</p>
-                        </div>
-                    </div>
-                    <input type="hidden" id="pImgData">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Category</label>
-                    <select id="pCategory" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                        <option value="media">Video & Photography (Music Video, Events, Portrait)</option>
-                        <option value="music_class">Music Classes (Guitar, Drums, Vocal)</option>
-                        <option value="sound">Sound Engineering & Live Streaming</option>
-                        <option value="hvac">Electrical, Heating & A/C</option>
-                        <option value="roofing">Roofing & House Painting</option>
-                        <option value="security">Home Security & CCTV</option>
-                        <option value="plumbing">Plumbing</option>
-                        <option value="appliance">Appliance Repair</option>
-                        <option value="handyman">Handyman</option>
-                        <option value="cleaning">Home Cleaning</option>
-                        <option value="lawn">Lawn & Yard</option>
-                        <option value="towing">Towing Service</option>
-                        <option value="locksmith">Locksmith</option>
-                        <option value="moving">Moving & Hauling</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Service Title</label>
-                    <input type="text" id="pTitle" required class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                </div>
-                <div class="flex space-x-2">
-                    <div class="w-1/2">
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Rate</label>
-                        <input type="text" id="pRate" required placeholder="Contact for rate" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                    </div>
-                    <div class="w-1/2">
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Phone / WhatsApp (Secured)</label>
-                        <input type="text" id="pPhone" required placeholder="+1..." onkeyup="updateListingFeeUI()" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">GPS Location Pin</label>
-                    <button type="button" onclick="capturePostLocation()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs border border-slate-300 flex items-center justify-center space-x-1.5 cursor-pointer">
-                        <i class="fa-solid fa-crosshairs text-emerald-600"></i>
-                        <span id="gpsPostBtnText">Use My Current GPS Location</span>
-                    </button>
-                    <input type="hidden" id="pLat">
-                    <input type="hidden" id="pLng">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Short Description</label>
-                    <textarea id="pDesc" rows="3" required class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
-                </div>
-
-                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 mt-2 hidden" id="paymentSectionContainer">
-                    <label class="block text-xs font-bold text-slate-700 mb-1.5"><i class="fa-solid fa-credit-card mr-1 text-amber-600"></i> Lifetime VIP Upgrade ($25.00)</label>
-                    <div id="card-element" class="bg-white p-3 rounded-lg border border-slate-200"></div>
-                </div>
-
-                <button type="submit" id="submitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow mt-2 cursor-pointer">Publish Listing</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Map View Modal -->
-    <div id="mapModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl p-4 shadow-2xl">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
-                <h3 id="mapTitle" class="font-bold text-slate-900 text-sm">Provider Location</h3>
-                <button onclick="closeMapModal()" class="text-slate-400 hover:text-slate-600 text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="w-full h-64 bg-slate-100 rounded-xl overflow-hidden mb-3">
-                <iframe id="googleMapIframe" class="w-full h-full border-0" loading="lazy" allowfullscreen src=""></iframe>
-            </div>
-            <a id="getDirectionBtn" href="#" target="_blank" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-2 shadow hover:bg-emerald-700">
-                <i class="fa-solid fa-diamond-turn-right"></i>
-                <span>Get Directions in Google Maps</span>
-            </a>
-        </div>
-    </div>
-
-    <!-- Message First & Booking Modal -->
-    <div id="chatModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-4 shadow-2xl flex flex-col max-h-[85vh]">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-3">
-                <h3 id="chatTitle" class="font-bold text-slate-900 text-base">Chat & Inquire</h3>
-                <button onclick="closeChat()" class="text-slate-400 hover:text-slate-600 text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-
-            <!-- Booking Date & Time & Note Selector Drawer -->
-            <div id="bookingDrawer" class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 mb-3 hidden">
-                <h4 class="font-bold text-emerald-900 text-xs mb-2 flex items-center"><i class="fa-regular fa-calendar-check text-emerald-600 mr-1.5"></i> Select Booking Date & Time</h4>
-                <div class="grid grid-cols-2 gap-2 mb-2">
-                    <div>
-                        <label class="block text-[10px] font-semibold text-emerald-800 mb-1">Date</label>
-                        <input type="date" id="bookingDateInput" class="w-full bg-white border border-emerald-200 rounded-xl p-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-semibold text-emerald-800 mb-1">Time</label>
-                        <input type="time" id="bookingTimeInput" class="w-full bg-white border border-emerald-200 rounded-xl p-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                    </div>
-                </div>
-                <div class="mb-2">
-                    <label class="block text-[10px] font-semibold text-emerald-800 mb-1">Optional Note / Job Details</label>
-                    <input type="text" id="bookingNoteInput" placeholder="e.g. Need help urgently this afternoon..." class="w-full bg-white border border-emerald-200 rounded-xl p-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                </div>
-                <button onclick="sendBookingRequest()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs shadow-sm shadow-emerald-200 flex items-center justify-center cursor-pointer">
-                    <i class="fa-solid fa-paper-plane mr-1.5"></i> Submit Booking Request
-                </button>
-            </div>
-
-            <!-- Chat Messages Area -->
-            <div id="chatMessages" class="flex-1 h-56 overflow-y-auto bg-slate-50/80 rounded-2xl p-3 mb-3 space-y-3"></div>
-
-            <!-- Chat Input Area -->
-            <div id="chatInputArea" class="flex flex-col space-y-2">
-                <div class="flex space-x-2">
-                    <input type="text" id="chatMessageInput" placeholder="Type a message to inquire..." class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                    <button onclick="sendTextMessage()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow transition cursor-pointer">
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </button>
-                </div>
-                <button onclick="toggleBookingDrawer()" class="w-full bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl text-xs font-bold shadow-md flex items-center justify-center space-x-2 cursor-pointer">
-                    <i class="fa-regular fa-calendar-plus text-sm"></i>
-                    <span>Request Service Booking (Date & Time)</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Provider Fee Confirmation Modal ($10 Standard / $8 VIP) -->
-    <div id="confirmFeeModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl text-center">
-            <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">
-                <i class="fa-solid fa-file-invoice-dollar"></i>
-            </div>
-            <h3 class="font-bold text-slate-900 text-base mb-1">Confirm Booking & Pay Fee</h3>
-            <p id="feeDescriptionText" class="text-xs text-slate-600 mb-3">Accepting this booking requires a System Lead Fee. Once confirmed, fee is non-refundable.</p>
-            
-            <div id="stripeFeeContainer" class="bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3 text-left">
-                <div id="provider-card-element"></div>
-            </div>
-
-            <div class="flex space-x-2">
-                <button onclick="closeFeeModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs cursor-pointer">Cancel</button>
-                <button onclick="processProviderFeeAndConfirm()" id="payConfirmBtn" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs shadow cursor-pointer">Confirm & Accept</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Notifications Modal -->
-    <div id="notificationModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl p-4 shadow-2xl max-h-[80vh] flex flex-col z-50">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
-                <h3 class="font-bold text-slate-900 text-sm flex items-center"><i class="fa-solid fa-bell text-emerald-600 mr-2"></i> My Notifications</h3>
-                <button onclick="closeNotificationModal()" class="text-slate-400 hover:text-slate-600 text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div id="notificationList" class="flex-1 overflow-y-auto space-y-2 text-xs py-1"></div>
-            <button onclick="clearNotifications()" class="mt-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl text-xs cursor-pointer">Clear All Alerts</button>
-        </div>
-    </div>
-
     <!-- Script Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, onChildAdded, update, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, update, off, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const notifSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        notifSound.volume = 1.0;
+
+        document.addEventListener('click', () => {
+            notifSound.play().then(() => {
+                notifSound.pause();
+                notifSound.currentTime = 0;
+            }).catch(() => {});
+        }, { once: true });
 
         const firebaseConfig = {
           apiKey: "AIzaSyBTrOCRMWMSklrIIdCacuEk_ApidP3kzJA",
@@ -390,7 +68,19 @@
         
         let providers = [];
         let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || ADMIN_LIST;
-        let notifications = JSON.parse(localStorage.getItem('nf_notifications')) || {};
+        let cloudNotifications = {};
+
+        let loggedInProviderName = localStorage.getItem('nf_logged_provider') || "Rising Star Music Studio";
+        document.getElementById('pName').value = loggedInProviderName;
+
+        window.updateActiveProviderView = function() {
+            const val = document.getElementById('pName').value.trim();
+            if (val) {
+                loggedInProviderName = val;
+                localStorage.setItem('nf_logged_provider', val);
+                updateNotifBadge();
+            }
+        };
 
         if (db) {
             const cloudProvidersRef = ref(db, 'global_providers');
@@ -403,6 +93,30 @@
                 }
                 filterProviders();
             });
+
+            const cloudNotifRef = ref(db, 'notifications');
+            onValue(cloudNotifRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    cloudNotifications = data;
+                    checkForNewIncomingAlerts(data);
+                } else {
+                    cloudNotifications = {};
+                }
+                updateNotifBadge();
+            });
+        }
+
+        function checkForNewIncomingAlerts(data) {
+            const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
+            const pNotifs = data[cleanKey] || data['isaiah_cung'] || data['rising_star_music_studio'];
+            if (pNotifs) {
+                const entries = Object.values(pNotifs);
+                const latest = entries[entries.length - 1];
+                if (latest && latest.unread && (Date.now() - latest.timestamp < 15000)) {
+                    notifSound.play().catch(e => console.log(e));
+                }
+            }
         }
 
         window.deleteAccountData = function() {
@@ -410,6 +124,7 @@
                 if (db) {
                     set(ref(db, 'global_providers'), null);
                     set(ref(db, 'chats'), null);
+                    set(ref(db, 'notifications'), null);
                 }
                 localStorage.clear();
                 providers = [];
@@ -419,24 +134,35 @@
             }
         };
 
-        function addNotification(providerName, text) {
-            if (!notifications[providerName]) {
-                notifications[providerName] = [];
-            }
-            notifications[providerName].unshift({ id: Date.now(), text: text, time: "Just now", unread: true });
-            localStorage.setItem('nf_notifications', JSON.stringify(notifications));
-            updateNotifBadge();
+        function addCloudNotification(providerName, text) {
+            if (!db) return;
+            const cleanProviderKey = providerName.replace(/\s+/g, '_').toLowerCase();
+            const providerNotifRef = ref(db, 'notifications/' + cleanProviderKey);
+            
+            push(providerNotifRef, {
+                text: text,
+                time: "Just now",
+                timestamp: Date.now(),
+                unread: true
+            });
 
             notifSound.play().catch(err => {
-                console.log("Audio play allowed after user interaction:", err);
+                console.log("Audio play allowed:", err);
             });
         }
 
         function updateNotifBadge() {
             let totalUnread = 0;
-            Object.keys(notifications).forEach(provider => {
-                if (notifications[provider]) {
-                    totalUnread += notifications[provider].filter(n => n.unread).length;
+            const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
+            
+            const checkKeys = [cleanKey, 'isaiah_cung', 'rising_star_music_studio'];
+
+            checkKeys.forEach(key => {
+                const pNotifs = cloudNotifications[key];
+                if (pNotifs) {
+                    Object.values(pNotifs).forEach(n => {
+                        if (n.unread) totalUnread++;
+                    });
                 }
             });
 
@@ -450,36 +176,49 @@
         }
 
         window.openNotificationModal = function() {
+            document.getElementById('activeProviderNotifLabel').innerText = loggedInProviderName;
+            renderCloudNotifications();
+            document.getElementById('notificationModal').classList.remove('hidden');
+        };
+
+        function renderCloudNotifications() {
             const listContainer = document.getElementById('notificationList');
-            const targetProvider = currentChatProvider || "Isaiah Cung";
-            const providerNotifs = notifications[targetProvider] || [];
+            if (!listContainer) return;
 
-            providerNotifs.forEach(n => n.unread = false);
-            localStorage.setItem('nf_notifications', JSON.stringify(notifications));
-            updateNotifBadge();
+            const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
+            let providerNotifsObj = cloudNotifications[cleanKey] || {};
+            
+            providerNotifsObj = { 
+                ...(cloudNotifications['isaiah_cung'] || {}), 
+                ...(cloudNotifications['rising_star_music_studio'] || {}),
+                ...providerNotifsObj 
+            };
 
-            if (providerNotifs.length === 0) {
-                listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-6">No notifications found.</p>`;
+            const notifsArray = Object.entries(providerNotifsObj).map(([id, val]) => ({ id, ...val })).sort((a, b) => b.timestamp - a.timestamp);
+
+            if (notifsArray.length === 0) {
+                listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-6">No incoming booking alerts found for "${loggedInProviderName}".</p>`;
             } else {
-                listContainer.innerHTML = providerNotifs.map(n => `
-                    <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col space-y-1">
-                        <p class="text-slate-800 font-medium">${n.text}</p>
-                        <span class="text-[10px] text-slate-400">${n.time}</span>
+                listContainer.innerHTML = notifsArray.map(n => `
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col space-y-1 shadow-sm">
+                        <p class="text-slate-900 font-bold text-xs"><i class="fa-solid fa-bell text-amber-600 mr-1"></i> ${n.text}</p>
+                        <span class="text-[10px] text-slate-500">${n.time}</span>
                     </div>
                 `).join('');
             }
-            document.getElementById('notificationModal').classList.remove('hidden');
-        };
+        }
 
         window.closeNotificationModal = function() {
             document.getElementById('notificationModal').classList.add('hidden');
         };
 
         window.clearNotifications = function() {
-            const targetProvider = currentChatProvider || "Isaiah Cung";
-            notifications[targetProvider] = [];
-            localStorage.setItem('nf_notifications', JSON.stringify(notifications));
-            window.openNotificationModal();
+            if (!db) return;
+            const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
+            set(ref(db, 'notifications/' + cleanKey), null);
+            set(ref(db, 'notifications/isaiah_cung'), null);
+            set(ref(db, 'notifications/rising_star_music_studio'), null);
+            renderCloudNotifications();
             updateNotifBadge();
         };
 
@@ -520,18 +259,6 @@
             radio.addEventListener('change', window.updateListingFeeUI);
         });
 
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            if (!lat1 || !lon1 || !lat2 || !lon2) return "0.8 mi";
-            const R = 3958.8;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return (R * c).toFixed(1) + " mi";
-        }
-
         window.getUserLocation = function() {
             const gpsText = document.getElementById('gpsText');
             if (navigator.geolocation) {
@@ -548,6 +275,26 @@
             } else { gpsText.innerText = "Geolocation not supported."; }
         };
 
+        window.resetToHomeAllServices = function() {
+            window.scrollTo({top: 0, behavior: 'smooth'});
+            
+            currentCategory = 'all';
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
+                btn.classList.add('bg-white', 'border', 'border-slate-200', 'text-slate-600');
+            });
+            const allBtn = document.getElementById('catBtnAll');
+            if (allBtn) {
+                allBtn.classList.remove('bg-white', 'border', 'border-slate-200', 'text-slate-600');
+                allBtn.classList.add('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
+            }
+
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.value = '';
+
+            filterProviders();
+        };
+
         function renderProviders(list) {
             const container = document.getElementById('providerList');
             const activeList = list.filter(p => p.active !== false);
@@ -560,15 +307,19 @@
 
             const sortedList = [...activeList].sort((a, b) => (b.isVip ? 1 : 0) - (a.isVip ? 1 : 0));
 
-            container.innerHTML = sortedList.map(p => {
-                const distanceStr = (userLat && userLng) ? calculateDistance(userLat, userLng, p.lat, p.lng) : "0.8 mi";
+            container.innerHTML = '';
+            sortedList.forEach(p => {
                 const imgUrl = p.img || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80";
+                const providerLocation = p.location || "Greenwood, Indiana, USA";
 
                 const currentUser = (document.getElementById('pName').value || "").trim().toLowerCase();
                 const canEdit = ADMIN_LIST.includes(currentUser) || (currentUser && currentUser === p.name.toLowerCase());
+                const encodedName = btoa(encodeURIComponent(p.name));
 
-                return `
-                <div class="provider-card bg-white border ${p.isVip ? 'border-amber-300 ring-1 ring-amber-200' : 'border-slate-100'} rounded-2xl p-4 shadow-sm relative">
+                const cardDiv = document.createElement('div');
+                cardDiv.className = `provider-card bg-white border ${p.isVip ? 'border-amber-300 ring-1 ring-amber-200' : 'border-slate-100'} rounded-2xl p-4 shadow-sm relative`;
+                
+                cardDiv.innerHTML = `
                     ${p.isVip ? '<span class="absolute -top-2.5 right-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-sm"><i class="fa-solid fa-crown mr-1"></i> VIP Featured</span>' : ''}
                     <div class="flex items-start justify-between">
                         <div class="flex space-x-3">
@@ -579,9 +330,7 @@
                                 <div class="flex items-center space-x-2 mt-1.5 text-xs text-slate-500">
                                     <span class="text-amber-500 font-bold flex items-center"><i class="fa-solid fa-star mr-1"></i> ${p.rating}</span>
                                     <span>•</span>
-                                    <button onclick="openMapModal('${p.name}', ${p.lat}, ${p.lng})" class="text-slate-600 hover:text-emerald-600 font-medium underline flex items-center cursor-pointer">
-                                        <i class="fa-solid fa-location-dot text-emerald-600 mr-1"></i> ${distanceStr} (View Map)
-                                    </button>
+                                    <span class="text-slate-600 font-medium flex items-center"><i class="fa-solid fa-earth-americas text-emerald-600 mr-1"></i> ${providerLocation}</span>
                                 </div>
                             </div>
                         </div>
@@ -589,23 +338,38 @@
                     </div>
                     <p class="text-xs text-slate-600 mt-3 leading-relaxed">${p.desc}</p>
                     
-                    <!-- Homepage Phone Display Strictly Locked -->
                     <div class="mt-3 bg-slate-50 border border-slate-200/80 rounded-xl p-2 text-center text-[11px] text-slate-500 font-medium">
                         <i class="fa-solid fa-lock mr-1 text-slate-400"></i> Contact phone locked (Chat & request booking to unlock)
                     </div>
 
                     <div class="flex space-x-2 mt-3">
-                        <button onclick="openChat('${p.name}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 shadow-sm shadow-emerald-100 cursor-pointer">
+                        <button type="button" class="chat-btn-action flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 shadow-sm shadow-emerald-100 cursor-pointer">
                             <i class="fa-solid fa-comments"></i>
                             <span>Chat & Inquire</span>
                         </button>
                         ${canEdit ? `
-                        <button onclick="openEditModal('${p.id}')" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center justify-center cursor-pointer" title="Edit Profile">
+                        <button type="button" class="edit-btn-action bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center justify-center cursor-pointer" title="Edit Profile">
                             <i class="fa-solid fa-pen-to-square"></i>
                         </button>` : ''}
                     </div>
-                </div>
-            `}).join('');
+                `;
+
+                const chatBtn = cardDiv.querySelector('.chat-btn-action');
+                if (chatBtn) {
+                    chatBtn.addEventListener('click', () => {
+                        window.openChatByB64(encodedName);
+                    });
+                }
+
+                const editBtn = cardDiv.querySelector('.edit-btn-action');
+                if (editBtn) {
+                    editBtn.addEventListener('click', () => {
+                        window.openEditModal(p.id);
+                    });
+                }
+
+                container.appendChild(cardDiv);
+            });
         }
 
         window.openMapModal = function(name, lat, lng) {
@@ -633,6 +397,7 @@
             document.getElementById('providerForm').reset();
             document.getElementById('profilePreview').src = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80";
             document.getElementById('pImgData').value = "";
+            document.getElementById('pLocation').value = "Greenwood, Indiana, USA";
             document.getElementById('postModal').classList.remove('hidden');
             window.updateListingFeeUI();
         };
@@ -650,6 +415,7 @@
             document.getElementById('pImgData').value = currentImg;
 
             document.getElementById('pCategory').value = p.category;
+            document.getElementById('pLocation').value = p.location || "Greenwood, Indiana, USA";
             document.getElementById('pTitle').value = p.title;
             document.getElementById('pRate').value = p.rate;
             document.getElementById('pPhone').value = p.phone;
@@ -671,6 +437,7 @@
                 const providerName = document.getElementById('pName').value.trim();
                 const providerImg = document.getElementById('pImgData').value || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80";
                 const serviceTitle = document.getElementById('pTitle').value.trim();
+                const locationStr = document.getElementById('pLocation').value.trim();
                 const selectedPlan = document.querySelector('input[name="plan"]:checked') ? document.querySelector('input[name="plan"]:checked').value : 'standard';
 
                 if (!vipMembers.includes(providerName.toLowerCase()) && selectedPlan === 'vip') {
@@ -686,6 +453,7 @@
                     name: providerName,
                     img: providerImg,
                     category: document.getElementById('pCategory').value,
+                    location: locationStr,
                     title: serviceTitle,
                     rate: document.getElementById('pRate').value,
                     phone: document.getElementById('pPhone').value.trim(),
@@ -702,7 +470,9 @@
                 }
 
                 closePostModal();
-                addNotification(providerName, `Listing Published: "${serviceTitle}"`);
+                loggedInProviderName = providerName;
+                localStorage.setItem('nf_logged_provider', providerName);
+                addCloudNotification(providerName, `Listing Published: "${serviceTitle}" (${locationStr})`);
                 alert("Listing successfully published globally!");
             } catch(err) {
                 console.error("Save Error:", err);
@@ -726,10 +496,19 @@
             const query = document.getElementById('searchInput').value.toLowerCase();
             const filtered = providers.filter(p => {
                 const matchesCat = (currentCategory === 'all' || p.category === currentCategory);
-                const matchesSearch = p.name.toLowerCase().includes(query) || p.title.toLowerCase().includes(query) || p.category.toLowerCase().includes(query) || p.desc.toLowerCase().includes(query);
+                const matchesSearch = p.name.toLowerCase().includes(query) || p.title.toLowerCase().includes(query) || (p.location && p.location.toLowerCase().includes(query)) || p.desc.toLowerCase().includes(query);
                 return matchesCat && matchesSearch;
             });
             renderProviders(filtered);
+        };
+
+        window.openChatByB64 = function(b64Name) {
+            try {
+                const realName = decodeURIComponent(atob(b64Name));
+                window.openChat(realName);
+            } catch(e) {
+                console.error("Chat open error:", e);
+            }
         };
 
         window.openChat = function(name) {
@@ -744,7 +523,7 @@
             }
 
             const providerKey = name.replace(/\s+/g, '_').toLowerCase();
-            currentChatId = `${providerKey}_${deviceSessionId}`;
+            currentChatId = `${providerKey}_shared_chat`;
 
             loadChatMessages(currentChatId);
             document.getElementById('chatModal').classList.remove('hidden');
@@ -772,7 +551,7 @@
             });
 
             input.value = '';
-            addNotification(currentChatProvider, `New message sent regarding service inquiry.`);
+            addCloudNotification(currentChatProvider, `New message sent to ${currentChatProvider}.`);
         };
 
         window.sendBookingRequest = function() {
@@ -804,8 +583,8 @@
             document.getElementById('bookingNoteInput').value = '';
             document.getElementById('bookingDrawer').classList.add('hidden');
             
-            addNotification(currentChatProvider, `New Booking Request sent for ${dateVal} at ${timeVal}`);
-            alert("Booking request sent successfully!");
+            addCloudNotification(currentChatProvider, `New Booking Request received for ${dateVal} at ${timeVal}!`);
+            alert("Booking request sent successfully to provider!");
         };
 
         function loadChatMessages(chatId) {
@@ -868,8 +647,11 @@
             if (db && pendingBookingMessageKey && currentChatId) {
                 const msgRef = ref(db, `chats/${currentChatId}/${pendingBookingMessageKey}`);
                 
-                update(msgRef, { status: 'accepted' });
-                addNotification(currentChatProvider, `Booking confirmed and lead unlocked successfully!`);
+                update(msgRef, { 
+                    status: 'accepted',
+                    acceptedAt: Date.now() 
+                });
+                addCloudNotification(currentChatProvider, `Booking confirmed and lead unlocked successfully!`);
             }
 
             btn.disabled = false;
@@ -907,13 +689,21 @@
                 
                 const providerObj = providers.find(p => p.name.toLowerCase() === currentChatProvider.toLowerCase());
                 
-                // STRENGHTENED SHIELD: Never render phone number inside DB string unless explicitly accepted via live action
-                const isAccepted = (m.status === 'accepted');
+                const FIVE_HOURS_MS = 5 * 60 * 60 * 1000;
+                let isAccepted = (m.status === 'accepted');
+                
+                if (isAccepted && m.acceptedAt) {
+                    const elapsed = Date.now() - m.acceptedAt;
+                    if (elapsed > FIVE_HOURS_MS) {
+                        isAccepted = false;
+                    }
+                }
+
                 const rawPhone = providerObj ? providerObj.phone : "";
                 const displayPhone = (isAccepted && rawPhone) ? rawPhone : "Hidden until accepted";
 
                 let statusBadge = `<span class="bg-amber-200 text-amber-900 text-[10px] font-bold px-2.5 py-1 rounded-full">Pending Response</span>`;
-                if (isAccepted) statusBadge = `<span class="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-circle-check mr-1"></i> Booking Confirmed</span>`;
+                if (isAccepted) statusBadge = `<span class="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-circle-check mr-1"></i> Booking Confirmed (5h Auto-Lock)</span>`;
                 if (m.status === 'cancelled') statusBadge = `<span class="bg-rose-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-circle-xmark mr-1"></i> Cancelled</span>`;
 
                 card.innerHTML = `
@@ -929,7 +719,7 @@
 
                     ${isAccepted ? `
                         <div class="bg-emerald-100/70 border border-emerald-300 rounded-xl p-2.5 text-center mt-2">
-                            <p class="text-[11px] font-bold text-emerald-900 mb-1"><i class="fa-solid fa-phone mr-1"></i> Provider Contact Unlocked:</p>
+                            <p class="text-[11px] font-bold text-emerald-900 mb-1"><i class="fa-solid fa-phone mr-1"></i> Provider Contact Unlocked (Auto-locks in 5 hrs):</p>
                             <a href="tel:${displayPhone}" class="text-xs font-extrabold text-emerald-700 underline">${displayPhone}</a>
                         </div>
                     ` : `
@@ -938,7 +728,7 @@
                         </div>
                     `}
 
-                    ${m.status === 'pending' ? `
+                    ${(!isAccepted && m.status !== 'cancelled') ? `
                         <div class="flex space-x-2 pt-2 mt-2 border-t border-amber-200/60">
                             <button onclick="cancelBookingRequest('${msgKey}')" class="flex-1 bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold py-2 rounded-xl text-xs transition">Decline</button>
                             <button onclick="initiateBookingAccept('${msgKey}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs shadow-sm transition">Accept Request</button>
@@ -952,10 +742,8 @@
         }
 
         const translations = {
-            en: { subtitle: "Local Services Marketplace", search_placeholder: "Search photo, video, music class, heater...", cat_all: "All Services", cat_media: "Video & Photography", cat_music_class: "Music Classes", cat_sound: "Sound & Live Stream", cat_hvac: "Electrical, Heating & A/C", cat_roofing: "Roofing & Painting", cat_security: "Home Security", cat_plumbing: "Plumbing", cat_appliance: "Appliance Repair", cat_handyman: "Handyman", cat_cleaning: "Home Cleaning", cat_lawn: "Lawn & Yard", cat_towing: "Towing Service", cat_locksmith: "Locksmith", cat_moving: "Moving & Hauling", verified_title: "Verified Nearby Providers", direct_chat: "Chat & Inquire", nav_home: "Home" },
-            my: { subtitle: "ဒေသတွင်း ဝန်ဆောင်မှု ဈေးကွက်", search_placeholder: "ဓာတ်ပုံ၊ ဗီဒီယို၊ ဟီတာ ရှာရန်...", cat_all: "ဝန်ဆောင်မှု အားလုံး", cat_media: "ဗီဒီယိုနှင့် ဓာတ်ပုံ", cat_music_class: "ဂီတသင်တန်းများ", cat_sound: "အသံနှင့် တိုက်ရိုက်ထုတ်လွှင့်မှု", cat_hvac: "မီး၊ အပူပေးစက်နှင့် အဲယားကွန်း", cat_roofing: "ခေါင်မိုးနှင့် ဆေးသုတ်ခြင်း", cat_security: "အိမ်သုံးလုံခြုံရေး", cat_plumbing: "ပိုက်ပြင်ဆင်ခြင်း", cat_appliance: "အိမ်သုံးပစ္စည်းပြင်ဆင်ခြင်း", cat_handyman: "လက်သမားနှင့် အထွေထွေပြင်ဆင်မှု", cat_cleaning: "အိမ်သန့်ရှင်းရေး", cat_lawn: "ခြံစည်းရိုးနှင့် မြက်ခင်းပြင်", cat_towing: "ယာဉ်ဆွဲဝန်ဆောင်မှု", cat_locksmith: "သော့ပြင်ဝန်ဆောင်မှု", cat_moving: "အိမ်ပြောင်းရွှေ့ဝန်ဆောင်မှု", verified_title: "အနီးအနားရှိ အတည်ပြုပြီး ဝန်ဆောင်မှုပေးသူများ", direct_chat: "စကားပြောရန်", nav_home: "ပင်မ" },
-            es: { subtitle: "Mercado de Servicios Locales", search_placeholder: "Buscar fotos, videos, calefacción...", cat_all: "Todos", cat_media: "Video y Fotografía", cat_music_class: "Clases de Música", cat_sound: "Sonido y Transmisión", cat_hvac: "Electricidad, Calefacción y A/C", cat_roofing: "Techos y Pintura", cat_security: "Seguridad", cat_plumbing: "Plomería", cat_appliance: "Reparación", cat_handyman: "Mantenimiento", cat_cleaning: "Limpieza", cat_lawn: "Jardinería", cat_towing: "Grúa", cat_locksmith: "Cerrajería", cat_moving: "Mudanzas", verified_title: "Proveedores Verificados", direct_chat: "Chat", nav_home: "Inicio" },
-            hi: { subtitle: "स्थानीय सेवा बाज़ार", search_placeholder: "फोटो, वीडियो, हीटर खोजें...", cat_all: "सभी सेवाएं", cat_media: "वीडियो और फोटोग्राफी", cat_music_class: "संगीत कक्षाएं", cat_sound: "साउंड और लाइव स्ट्रीम", cat_hvac: "बिजली, हीटर और एसी", cat_roofing: "छत और पेंटिंग", cat_security: "सुरक्षा", cat_plumbing: "प्लंबिंग", cat_appliance: "उपकरण मरम्मत", cat_handyman: "हैंडीमैन", cat_cleaning: "सफाई", cat_lawn: "लॉन और यार", cat_towing: "टोइंग", cat_locksmith: "चाबीसाजी", cat_moving: "मूविंग", verified_title: "सत्यापित नजदीकी सेवा प्रदाता", direct_chat: "चैट", nav_home: "होम" }
+            en: { subtitle: "Local Services Marketplace", search_placeholder: "Search photo, video, Greenwood, NC...", cat_all: "All Services", cat_media: "Video & Photography", cat_music_class: "Music Classes", cat_sound: "Sound & Live Stream", cat_hvac: "Electrical, Heating & A/C", cat_roofing: "Roofing & Painting", cat_security: "Home Security", cat_plumbing: "Plumbing", cat_appliance: "Appliance Repair", cat_handyman: "Handyman", cat_cleaning: "Home Cleaning", cat_lawn: "Lawn & Yard", cat_towing: "Towing Service", cat_locksmith: "Locksmith", cat_moving: "Moving & Hauling", verified_title: "Verified Nearby Providers", direct_chat: "Chat & Inquire", nav_home: "Home" },
+            my: { subtitle: "ဒေသတွင်း ဝန်ဆောင်မှု ဈေးကွက်", search_placeholder: "ဓာတ်ပုံ၊ ဗီဒီယို၊ မြို့ သို့မဟုတ် နိုင်ငံ ရှာရန်...", cat_all: "ဝန်ဆောင်မှု အားလုံး", cat_media: "ဗီဒီယိုနှင့် ဓာတ်ပုံ", cat_music_class: "ဂီတသင်တန်းများ", cat_sound: "အသံနှင့် တိုက်ရိုက်ထုတ်လွှင့်မှု", cat_hvac: "မီး၊ အပူပေးစက်နှင့် အဲယားကွန်း", cat_roofing: "ခေါင်မိုးနှင့် ဆေးသုတ်ခြင်း", cat_security: "အိမ်သုံးလုံခြုံရေး", cat_plumbing: "ပိုက်ပြင်ဆင်ခြင်း", cat_appliance: "အိမ်သုံးပစ္စည်းပြင်ဆင်ခြင်း", cat_handyman: "လက်သမားနှင့် အထွေထွေပြင်ဆင်မှု", cat_cleaning: "အိမ်သန့်ရှင်းရေး", cat_lawn: "ခြံစည်းရိုးနှင့် မြက်ခင်းပြင်", cat_towing: "ယာဉ်ဆွဲဝန်ဆောင်မှု", cat_locksmith: "သော့ပြင်ဝန်ဆောင်မှု", cat_moving: "အိမ်ပြောင်းရွှေ့ဝန်ဆောင်မှု", verified_title: "အနီးအနားရှိ အတည်ပြုပြီး ဝန်ဆောင်မှုပေးသူများ", direct_chat: "စကားပြောရန်", nav_home: "ပင်မ" }
         };
 
         window.changeLanguage = function(lang) {
@@ -976,5 +764,3 @@
             updateNotifBadge();
         });
     </script>
-</body>
-</html>
