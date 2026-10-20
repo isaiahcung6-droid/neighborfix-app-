@@ -62,7 +62,7 @@
             <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
                 <i class="fa-solid fa-magnifying-glass"></i>
             </span>
-            <input type="text" id="searchInput" onkeyup="filterProviders()" placeholder="Search photo, video, Greenwood, NC..." data-i18n-placeholder="search_placeholder" class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm">
+            <input type="text" id="searchInput" oninput="debounceFilter()" placeholder="Search photo, video, Greenwood, NC..." data-i18n-placeholder="search_placeholder" class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm">
         </div>
 
         <!-- Categories Options -->
@@ -640,12 +640,13 @@
 
             const sortedList = [...activeList].sort((a, b) => (b.isVip ? 1 : 0) - (a.isVip ? 1 : 0));
 
-            container.innerHTML = '';
+            // Use DocumentFragment for fast rendering without lag
+            const fragment = document.createDocumentFragment();
+
             sortedList.forEach(p => {
                 const imgUrl = p.img || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80";
                 const providerLocation = p.location || "Greenwood, Indiana, USA";
 
-                // Strict Ownership Security Check for Editing (Exact Name Match)
                 const currentUser = (loggedInProviderName || "").trim().toLowerCase();
                 const isOwner = currentUser && (currentUser === p.name.trim().toLowerCase());
                 const isAdmin = ADMIN_LIST.includes(currentUser);
@@ -660,7 +661,7 @@
                     ${p.isVip ? '<span class="absolute -top-2.5 right-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-sm"><i class="fa-solid fa-crown mr-1"></i> VIP Featured</span>' : ''}
                     <div class="flex items-start justify-between">
                         <div class="flex space-x-3">
-                            <img src="${imgUrl}" alt="${p.name}" class="w-14 h-14 rounded-2xl object-cover shadow-sm">
+                            <img src="${imgUrl}" alt="${p.name}" class="w-14 h-14 rounded-2xl object-cover shadow-sm" loading="lazy">
                             <div>
                                 <h3 class="font-bold text-slate-900">${p.name}</h3>
                                 <p class="text-xs text-emerald-600 font-semibold mt-0.5">${p.title}</p>
@@ -705,9 +706,11 @@
                     });
                 }
 
-                container.appendChild(cardDiv);
+                fragment.appendChild(cardDiv);
             });
             
+            container.innerHTML = '';
+            container.appendChild(fragment);
             window.changeLanguage(currentLang);
         }
 
@@ -840,25 +843,24 @@
             filterProviders();
         };
 
+        // Debounce mechanism to prevent lagging/freezing when typing fast in search bar
+        let searchTimeout = null;
+        window.debounceFilter = function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                filterProviders();
+            }, 150);
+        };
+
         window.filterProviders = function() {
             const rawQuery = document.getElementById('searchInput').value.toLowerCase().trim();
-            // Flexible keyword processing: handles plural/singular and typos like "sounds system" vs "sound system"
-            const queryWords = rawQuery.replace(/s\b/g, '').split(/\s+/).filter(w => w.length > 0);
-
             const filtered = providers.filter(p => {
                 const matchesCat = (currentCategory === 'all' || p.category === currentCategory);
-                
+                if (!matchesCat) return false;
+                if (!rawQuery) return true;
+
                 const fullText = (p.name + " " + p.title + " " + (p.location || "") + " " + p.desc + " " + p.category).toLowerCase();
-                const normalizedFullText = fullText.replace(/s\b/g, '');
-
-                if (rawQuery === "") return matchesCat;
-
-                let matchesSearch = fullText.includes(rawQuery) || normalizedFullText.includes(rawQuery.replace(/s\b/g, ''));
-                if (!matchesSearch && queryWords.length > 0) {
-                    matchesSearch = queryWords.every(word => normalizedFullText.includes(word));
-                }
-
-                return matchesCat && matchesSearch;
+                return fullText.includes(rawQuery);
             });
             renderProviders(filtered);
         };
