@@ -334,7 +334,7 @@
         </div>
     </div>
 
-    <!-- Ultra-Fast Script Engine with Unified Shared Chat Room -->
+    <!-- Ultra-Fast Script Engine with Isolated Customer-Provider Chats -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, query, limitToLast, update, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -774,8 +774,11 @@
             }
 
             const providerKey = name.replace(/\s+/g, '_').toLowerCase();
-            // FIXED: Use a single unified chat room for both Customer and Provider so messages sync directly.
-            currentChatId = `shared_chat_${providerKey}`;
+            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
+            const isProviderSelf = currentUser && (currentUser === name.trim().toLowerCase());
+
+            // FIXED: Each customer device has a unique session ID. Providers view specific customer threads if selected, or default to their own device session.
+            currentChatId = isProviderSelf ? `${providerKey}_chat_${deviceSessionId}` : `${providerKey}_${deviceSessionId}`;
 
             loadChatMessages(currentChatId);
             document.getElementById('chatModal').classList.remove('hidden');
@@ -929,7 +932,6 @@
             const currentUser = (loggedInProviderName || "").trim().toLowerCase();
             const isProviderSelf = currentUser && (currentUser === currentChatProvider.trim().toLowerCase());
             
-            // Correctly determine alignment based on sender type vs current viewer
             let isMyMessage = false;
             if (isProviderSelf) {
                 isMyMessage = (m.sender === 'provider');
@@ -1034,7 +1036,7 @@
         const translations = {
             en: { subtitle: "Local Services Marketplace", search_placeholder: "Search photo, video, Greenwood, NC...", cat_all: "All Services", cat_media: "Video & Photography", cat_music_class: "Music Classes", cat_sound: "Sound & Live Stream", cat_hvac: "Electrical, Heating & A/C", cat_roofing: "Roofing & Painting", cat_security: "Home Security", cat_plumbing: "Plumbing", cat_appliance: "Appliance Repair", cat_handyman: "Handyman", cat_cleaning: "Home Cleaning", cat_lawn: "Lawn & Yard", cat_towing: "Towing Service", cat_locksmith: "Locksmith", cat_moving: "Moving & Hauling", verified_title: "Verified Nearby Providers", direct_chat: "Chat & Inquire", nav_home: "Home", clear_alerts: "Clear All Alerts" },
             my: { subtitle: "ဒေသတွင်း ဝန်ဆောင်မှု ဈေးကွက်", search_placeholder: "ဓာတ်ပုံ၊ ဗီဒီယို၊ မြို့ သို့မဟုတ် နိုင်ငံ ရှာရန်...", cat_all: "ဝန်ဆောင်မှု အားလုံး", cat_media: "ဗီဒီယိုနှင့် ဓာတ်ပုံ", cat_music_class: "ဂီတသင်တန်းများ", cat_sound: "အသံနှင့် တိုက်ရိုက်ထုတ်လွှင့်မှု", cat_hvac: "မီး၊ အပူပေးစက်နှင့် အဲယားကွန်း", cat_roofing: "ခေါင်မိုးနှင့် ဆေးသုတ်ခြင်း", cat_security: "အိမ်သုံးလုံခြုံရေး", cat_plumbing: "ပိုက်ပြင်ဆင်ခြင်း", cat_appliance: "အိမ်သုံးပစ္စည်းပြင်ဆင်ခြင်း", cat_handyman: "လက်သမားနှင့် အထွေထွေပြင်ဆင်မှု", cat_cleaning: "အိမ်သန့်ရှင်းရေး", cat_lawn: "ခြံစည်းရိုးနှင့် မြက်ခင်းပြင်", cat_towing: "ယာဉ်ဆွဲဝန်ဆောင်မှု", cat_locksmith: "သော့ပြင်ဝန်ဆောင်မှု", cat_moving: "အိမ်ပြောင်းရွှေ့ဝန်ဆောင်မှု", verified_title: "အနီးအနားရှိ အတည်ပြုပြီး ဝန်ဆောင်မှုပေးသူများ", direct_chat: "စကားပြောရန်", nav_home: "ပင်မ", clear_alerts: "သတိပေးချက် အားလုံးကို ရှင်းမည်" },
-            es: { subtitle: "Mercado de Servicios Locales", search_placeholder: "Buscar fotos, videos, Greenwood...", cat_all: "Todos los Servicios", cat_media: "Video y Fotografía", cat_music_class: "Clases de Música", cat_sound: "Sonido y Transmisión", cat_hvac: "Electricidad y Aire Acondicionado", cat_roofing: "Techado y Pintura", cat_security: "Seguridad para el Hogar", cat_plumbing: "Fontanería", cat_appliance: "Reparación de Electrodomésticos", cat_handyman: "Manitas / Reparaciones", cat_cleaning: "Limpieza del Hogar", cat_lawn: "Jardinería y Césped", cat_towing: "Servicio de Grúa", cat_locksmith: "Cerrajería", cat_moving: "Mudanzas y Transportes", verified_title: "Proveedores Cercanos Verificados", direct_chat: "Chatear y Consultar", nav_home: "Inicio", clear_alerts: "Borrar todas las alertas" },
+            es: { subtitle: "Mercado de Servicios Locales", search_placeholder: "Buscar fotos, videos, Greenwood...", cat_all: "Todos los Servicios", cat_media: "Video y Fotografía", cat_music_class: "Clases de Música", cat_sound: "Sonido y Transmisión", cat_hvac: "Electricidad y Aire Acondicionado", cat_roofing: "Techado y Pintura", cat_security: "Seguridad para el Hogar", cat_plumbing: "Fontanería", cat_appliance: "Reparación de Electrodomésticos", cat_handyman: "Manitas / Reparaciones", cat_cleaning: "Limpieza del Hogar", cat_lawn: "Jardinería y Césped", cat_towing: "Servicio de Grúa", cat_locksmith: "Cerrajería", cat_moving: "Mudanzas y Transportes", verified_title: "Proveedores Cercanos Verificados", direct_chat: "Chatear y Consultار", nav_home: "Inicio", clear_alerts: "Borrar todas las alertas" },
             hi: { subtitle: "स्थानीय सेवा बाज़ार", search_placeholder: "फोटो, वीडियो, स्थान खोजें...", cat_all: "सभी सेवाएं", cat_media: "वीडियो और फोटोग्राफी", cat_music_class: "संगीत कक्षाएं", cat_sound: "साउंड और लाइव स्ट्रीम", cat_hvac: "इलेक्ट्रिकल और एसी", cat_roofing: "छत और पेंटिंग", cat_security: "होम सुरक्षा", cat_plumbing: "प्लंबिंग", cat_appliance: "उपकरण मरम्मत", cat_handyman: "हैंडीमैन", cat_cleaning: "घर की सफाई", cat_lawn: "लॉन और यार्ड", cat_towing: "टोइंग सेवा", cat_locksmith: "ताला मरम्मत", cat_moving: "मूविंग और हॉलिंग", verified_title: "सत्यापित नजदीकी सेवा प्रदाता", direct_chat: "चैट करें और पूछें", nav_home: "होम", clear_alerts: "सभी अलर्ट साफ़ करें" }
         };
 
