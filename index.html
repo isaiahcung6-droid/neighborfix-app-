@@ -332,7 +332,7 @@
                 <button onclick="closeNotificationModal()" class="text-slate-400 hover:text-slate-600 text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="notificationList" class="flex-1 overflow-y-auto space-y-2 text-xs py-1"></div>
-            <button onclick="clearNotifications()" class="mt-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl text-xs cursor-pointer">Clear All Alerts</button>
+            <button onclick="clearNotifications()" class="mt-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl text-xs cursor-pointer" data-i18n="clear_alerts">Clear All Alerts</button>
         </div>
     </div>
 
@@ -473,13 +473,13 @@
         };
 
         function addCloudNotification(providerName, text) {
-            if (!db) return;
+            if (!db || !providerName) return;
             const cleanProviderKey = providerName.replace(/\s+/g, '_').toLowerCase();
             const providerNotifRef = ref(db, 'notifications/' + cleanProviderKey);
             
             push(providerNotifRef, {
                 text: text,
-                time: "Just now",
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 timestamp: Date.now(),
                 unread: true
             });
@@ -709,7 +709,6 @@
                 container.appendChild(cardDiv);
             });
             
-            // Re-apply language translations to newly dynamically generated elements
             window.changeLanguage(currentLang);
         }
 
@@ -813,7 +812,8 @@
                 closePostModal();
                 loggedInProviderName = providerName;
                 localStorage.setItem('nf_logged_provider', providerName);
-                addCloudNotification(providerName, `Listing Published: "${serviceTitle}" (${locationStr})`);
+                
+                // Listing တင်လိုက်ရုံဖြင့် အလဟဿ Notification မထွက်အောင် ဖယ်ရှားထားပါသည်
                 alert("Listing successfully published globally!");
             } catch(err) {
                 console.error("Save Error:", err);
@@ -892,7 +892,9 @@
             });
 
             input.value = '';
-            addCloudNotification(currentChatProvider, `New message sent to ${currentChatProvider}.`);
+            
+            // Chat စာတိုပေးပို့မှသာ Provider ဆီသို့ Notification သီးသန့်ပေးပို့မည်
+            addCloudNotification(currentChatProvider, `💬 New message from customer: "${text}"`);
         };
 
         window.sendBookingRequest = function() {
@@ -924,7 +926,8 @@
             document.getElementById('bookingNoteInput').value = '';
             document.getElementById('bookingDrawer').classList.add('hidden');
             
-            addCloudNotification(currentChatProvider, `New Booking Request received for ${dateVal} at ${timeVal}!`);
+            // Booking တောင်းဆိုမှသာ Provider ဆီသို့ Notification သီးသန့်ပေးပို့မည်
+            addCloudNotification(currentChatProvider, `📅 New Job Request for ${dateVal} at ${timeVal}!`);
             alert("Booking request sent successfully to provider!");
         };
 
@@ -1108,7 +1111,8 @@
                 cat_moving: "Moving & Hauling", 
                 verified_title: "Verified Nearby Providers", 
                 direct_chat: "Chat & Inquire", 
-                nav_home: "Home" 
+                nav_home: "Home",
+                clear_alerts: "Clear All Alerts"
             },
             my: { 
                 subtitle: "ဒေသတွင်း ဝန်ဆောင်မှု ဈေးကွက်", 
@@ -1130,7 +1134,8 @@
                 cat_moving: "အိမ်ပြောင်းရွှေ့ဝန်ဆောင်မှု", 
                 verified_title: "အနီးအနားရှိ အတည်ပြုပြီး ဝန်ဆောင်မှုပေးသူများ", 
                 direct_chat: "စကားပြောရန်", 
-                nav_home: "ပင်မ" 
+                nav_home: "ပင်မ",
+                clear_alerts: "သတိပေးချက် အားလုံးကို ရှင်းမည်"
             },
             es: { 
                 subtitle: "Mercado de Servicios Locales", 
@@ -1152,7 +1157,8 @@
                 cat_moving: "Mudanzas y Transportes", 
                 verified_title: "Proveedores Cercanos Verificados", 
                 direct_chat: "Chatear y Consultar", 
-                nav_home: "Inicio" 
+                nav_home: "Inicio",
+                clear_alerts: "Borrar todas las alertas"
             },
             hi: { 
                 subtitle: "स्थानीय सेवा बाज़ार", 
@@ -1174,7 +1180,8 @@
                 cat_moving: "मूविंग और हॉलिंग", 
                 verified_title: "सत्यापित नजदीकी सेवा प्रदाता", 
                 direct_chat: "चैट करें और पूछें", 
-                nav_home: "होम" 
+                nav_home: "होम",
+                clear_alerts: "सभी अलर्ट साफ़ करें"
             }
         };
 
