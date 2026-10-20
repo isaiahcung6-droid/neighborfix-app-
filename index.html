@@ -67,7 +67,7 @@
 
         <!-- Categories Options -->
         <div class="flex space-x-2 overflow-x-auto pb-2 mb-5 no-scrollbar">
-            <button onclick="filterCat(event, 'all')" class="cat-btn active bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm shadow-emerald-200 transition" data-i18n="cat_all">All Services</button>
+            <button onclick="filterCat(event, 'all')" id="catBtnAll" class="cat-btn active bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm shadow-emerald-200 transition" data-i18n="cat_all">All Services</button>
             <button onclick="filterCat(event, 'media')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition"><i class="fa-solid fa-camera text-emerald-600 mr-1"></i> <span data-i18n="cat_media">Video & Photography</span></button>
             <button onclick="filterCat(event, 'music_class')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition"><i class="fa-solid fa-music text-emerald-600 mr-1"></i> <span data-i18n="cat_music_class">Music Classes</span></button>
             <button onclick="filterCat(event, 'sound')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition"><i class="fa-solid fa-microphone-lines text-emerald-600 mr-1"></i> <span data-i18n="cat_sound">Sound & Live Stream</span></button>
@@ -114,7 +114,7 @@
 
     <!-- Bottom Navigation Bar -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 py-2 px-6 flex justify-around items-center z-40 shadow-lg">
-        <button onclick="window.scrollTo({top:0, behavior:'smooth'})" class="flex flex-col items-center text-emerald-600 cursor-pointer">
+        <button onclick="resetToHomeAllServices()" class="flex flex-col items-center text-emerald-600 cursor-pointer">
             <i class="fa-solid fa-house text-lg"></i>
             <span class="text-[10px] font-semibold mt-1" data-i18n="nav_home">Home</span>
         </button>
@@ -625,6 +625,27 @@
             } else { gpsText.innerText = "Geolocation not supported."; }
         };
 
+        // FIXED 1: Home button now resets to "All Services", clears search query, and scrolls to top smoothly
+        window.resetToHomeAllServices = function() {
+            window.scrollTo({top: 0, behavior: 'smooth'});
+            
+            currentCategory = 'all';
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
+                btn.classList.add('bg-white', 'border', 'border-slate-200', 'text-slate-600');
+            });
+            const allBtn = document.getElementById('catBtnAll');
+            if (allBtn) {
+                allBtn.classList.remove('bg-white', 'border', 'border-slate-200', 'text-slate-600');
+                allBtn.classList.add('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
+            }
+
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.value = '';
+
+            filterProviders();
+        };
+
         function renderProviders(list) {
             const container = document.getElementById('providerList');
             const activeList = list.filter(p => p.active !== false);
@@ -637,16 +658,20 @@
 
             const sortedList = [...activeList].sort((a, b) => (b.isVip ? 1 : 0) - (a.isVip ? 1 : 0));
 
-            container.innerHTML = sortedList.map(p => {
-                const distanceStr = (userLat && userLng) ? calculateDistance(userLat, userLng, p.lat, p.lng) : "0.8 mi";
+            // FIXED 2: Using safe DOM creation and Base64 encoding for chat clicks to prevent syntax and quote errors completely
+            container.innerHTML = '';
+            sortedList.forEach(p => {
                 const imgUrl = p.img || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80";
                 const providerLocation = p.location || "Greenwood, Indiana, USA";
 
                 const currentUser = (document.getElementById('pName').value || "").trim().toLowerCase();
                 const canEdit = ADMIN_LIST.includes(currentUser) || (currentUser && currentUser === p.name.toLowerCase());
+                const encodedName = btoa(encodeURIComponent(p.name));
 
-                return `
-                <div class="provider-card bg-white border ${p.isVip ? 'border-amber-300 ring-1 ring-amber-200' : 'border-slate-100'} rounded-2xl p-4 shadow-sm relative">
+                const cardDiv = document.createElement('div');
+                cardDiv.className = `provider-card bg-white border ${p.isVip ? 'border-amber-300 ring-1 ring-amber-200' : 'border-slate-100'} rounded-2xl p-4 shadow-sm relative`;
+                
+                cardDiv.innerHTML = `
                     ${p.isVip ? '<span class="absolute -top-2.5 right-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-sm"><i class="fa-solid fa-crown mr-1"></i> VIP Featured</span>' : ''}
                     <div class="flex items-start justify-between">
                         <div class="flex space-x-3">
@@ -670,17 +695,33 @@
                     </div>
 
                     <div class="flex space-x-2 mt-3">
-                        <button onclick="openChat('${p.name}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 shadow-sm shadow-emerald-100 cursor-pointer">
+                        <button type="button" class="chat-btn-action flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 shadow-sm shadow-emerald-100 cursor-pointer">
                             <i class="fa-solid fa-comments"></i>
                             <span>Chat & Inquire</span>
                         </button>
                         ${canEdit ? `
-                        <button onclick="openEditModal('${p.id}')" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center justify-center cursor-pointer" title="Edit Profile">
+                        <button type="button" class="edit-btn-action bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center justify-center cursor-pointer" title="Edit Profile">
                             <i class="fa-solid fa-pen-to-square"></i>
                         </button>` : ''}
                     </div>
-                </div>
-            `}).join('');
+                `;
+
+                const chatBtn = cardDiv.querySelector('.chat-btn-action');
+                if (chatBtn) {
+                    chatBtn.addEventListener('click', () => {
+                        window.openChatByB64(encodedName);
+                    });
+                }
+
+                const editBtn = cardDiv.querySelector('.edit-btn-action');
+                if (editBtn) {
+                    editBtn.addEventListener('click', () => {
+                        window.openEditModal(p.id);
+                    });
+                }
+
+                container.appendChild(cardDiv);
+            });
         }
 
         window.openMapModal = function(name, lat, lng) {
@@ -811,6 +852,15 @@
                 return matchesCat && matchesSearch;
             });
             renderProviders(filtered);
+        };
+
+        window.openChatByB64 = function(b64Name) {
+            try {
+                const realName = decodeURIComponent(atob(b64Name));
+                window.openChat(realName);
+            } catch(e) {
+                console.error("Chat open error:", e);
+            }
         };
 
         window.openChat = function(name) {
