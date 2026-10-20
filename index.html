@@ -62,7 +62,7 @@
             <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
                 <i class="fa-solid fa-magnifying-glass"></i>
             </span>
-            <input type="text" id="searchInput" onkeyup="filterProviders()" placeholder="Search photo, video, Greenwood, NC..." data-i18n-placeholder="search_placeholder" class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm">
+            <input type="text" id="searchInput" oninput="debounceFilter()" placeholder="Search photo, video, Greenwood, NC..." data-i18n-placeholder="search_placeholder" class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm">
         </div>
 
         <!-- Categories Options -->
@@ -93,15 +93,6 @@
         <!-- Provider Cards Container -->
         <div id="providerList" class="space-y-4"></div>
 
-        <!-- Danger Zone -->
-        <div class="mt-8 bg-rose-50 border border-rose-200 rounded-2xl p-4 text-center">
-            <h3 class="font-bold text-rose-900 text-xs mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Danger Zone</h3>
-            <p class="text-[11px] text-rose-700 mb-3">Permanently wipe stale database entries & reset local listings.</p>
-            <button onclick="deleteAccountData()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded-xl text-xs shadow transition cursor-pointer">
-                <i class="fa-solid fa-trash mr-1"></i> Clear Stale Database & Cache
-            </button>
-        </div>
-
         <!-- Studio Branding Footer -->
         <div class="mt-6 mb-4 text-center border-t border-slate-200/60 pt-5">
             <p class="text-xs text-slate-400 font-medium">Powered & Media Supported by</p>
@@ -118,7 +109,7 @@
             <i class="fa-solid fa-house text-lg"></i>
             <span class="text-[10px] font-semibold mt-1" data-i18n="nav_home">Home</span>
         </button>
-        <button onclick="openPostModal()" class="w-12 h-12 bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-200 -mt-5 border-4 border-white active:scale-95 transition cursor-pointer">
+        <button onclick="openPostModal()" class="w-12 h-12 bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-200 -mt-5 border-4 border-white active:scale-95 transition cursor-pointer" title="Post/Edit Service">
             <i class="fa-solid fa-plus text-lg"></i>
         </button>
         <button onclick="openNotificationModal()" class="flex flex-col items-center text-slate-400 hover:text-slate-600 relative cursor-pointer">
@@ -127,11 +118,11 @@
         </button>
     </nav>
 
-    <!-- Post / Edit Service Modal -->
+    <!-- Protected Post / Edit Service Modal (Device Restricted) -->
     <div id="postModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
-                <h3 id="modalTitle" class="font-bold text-slate-900 text-base">Post Your Service Listing</h3>
+                <h3 id="modalTitle" class="font-bold text-slate-900 text-base">Post / Edit Service Listing</h3>
                 <button onclick="closePostModal()" class="text-slate-400 hover:text-slate-600 text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
@@ -155,7 +146,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Your Name / Business Name (Provider Login)</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Your Business Name (Provider Login)</label>
                     <input type="text" id="pName" required onkeyup="updateListingFeeUI(); updateActiveProviderView();" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="e.g. Rising Star Music Studio">
                 </div>
 
@@ -332,7 +323,7 @@
                 <button onclick="closeNotificationModal()" class="text-slate-400 hover:text-slate-600 text-lg px-2"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="notificationList" class="flex-1 overflow-y-auto space-y-2 text-xs py-1"></div>
-            <button onclick="clearNotifications()" class="mt-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl text-xs cursor-pointer">Clear All Alerts</button>
+            <button onclick="clearNotifications()" class="mt-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl text-xs cursor-pointer" data-i18n="clear_alerts">Clear All Alerts</button>
         </div>
     </div>
 
@@ -376,6 +367,7 @@
         let cardMounted = false;
         let providerCardMounted = false;
 
+        // Unique Device Session Identifier
         let deviceSessionId = localStorage.getItem('nf_device_session');
         if (!deviceSessionId) {
             deviceSessionId = 'device_' + Math.random().toString(36).substring(2, 9);
@@ -408,8 +400,9 @@
         let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || ADMIN_LIST;
         let cloudNotifications = {};
 
+        // Active Provider Session Name
         let loggedInProviderName = localStorage.getItem('nf_logged_provider') || "Rising Star Music Studio";
-        document.getElementById('pName').value = loggedInProviderName;
+        if(document.getElementById('pName')) document.getElementById('pName').value = loggedInProviderName;
 
         window.updateActiveProviderView = function() {
             const val = document.getElementById('pName').value.trim();
@@ -417,6 +410,7 @@
                 loggedInProviderName = val;
                 localStorage.setItem('nf_logged_provider', val);
                 updateNotifBadge();
+                filterProviders();
             }
         };
 
@@ -447,7 +441,7 @@
 
         function checkForNewIncomingAlerts(data) {
             const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
-            const pNotifs = data[cleanKey] || data['isaiah_cung'] || data['rising_star_music_studio'];
+            const pNotifs = data[cleanKey];
             if (pNotifs) {
                 const entries = Object.values(pNotifs);
                 const latest = entries[entries.length - 1];
@@ -457,29 +451,14 @@
             }
         }
 
-        window.deleteAccountData = function() {
-            if (confirm("Are you sure you want to permanently clear database entries and local cache?")) {
-                if (db) {
-                    set(ref(db, 'global_providers'), null);
-                    set(ref(db, 'chats'), null);
-                    set(ref(db, 'notifications'), null);
-                }
-                localStorage.clear();
-                providers = [];
-                filterProviders();
-                alert("Database nodes cleared and stale cache wiped!");
-                location.reload();
-            }
-        };
-
         function addCloudNotification(providerName, text) {
-            if (!db) return;
+            if (!db || !providerName) return;
             const cleanProviderKey = providerName.replace(/\s+/g, '_').toLowerCase();
             const providerNotifRef = ref(db, 'notifications/' + cleanProviderKey);
             
             push(providerNotifRef, {
                 text: text,
-                time: "Just now",
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 timestamp: Date.now(),
                 unread: true
             });
@@ -493,16 +472,12 @@
             let totalUnread = 0;
             const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
             
-            const checkKeys = [cleanKey, 'isaiah_cung', 'rising_star_music_studio'];
-
-            checkKeys.forEach(key => {
-                const pNotifs = cloudNotifications[key];
-                if (pNotifs) {
-                    Object.values(pNotifs).forEach(n => {
-                        if (n.unread) totalUnread++;
-                    });
-                }
-            });
+            const pNotifs = cloudNotifications[cleanKey];
+            if (pNotifs) {
+                Object.values(pNotifs).forEach(n => {
+                    if (n.unread) totalUnread++;
+                });
+            }
 
             const badge = document.getElementById('notifBadge');
             if (totalUnread > 0) {
@@ -525,17 +500,11 @@
 
             const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
             let providerNotifsObj = cloudNotifications[cleanKey] || {};
-            
-            providerNotifsObj = { 
-                ...(cloudNotifications['isaiah_cung'] || {}), 
-                ...(cloudNotifications['rising_star_music_studio'] || {}),
-                ...providerNotifsObj 
-            };
 
             const notifsArray = Object.entries(providerNotifsObj).map(([id, val]) => ({ id, ...val })).sort((a, b) => b.timestamp - a.timestamp);
 
             if (notifsArray.length === 0) {
-                listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-6">No incoming booking alerts found for "${loggedInProviderName}".</p>`;
+                listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-6">No incoming chat or booking alerts found for "${loggedInProviderName}".</p>`;
             } else {
                 listContainer.innerHTML = notifsArray.map(n => `
                     <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col space-y-1 shadow-sm">
@@ -553,11 +522,15 @@
         window.clearNotifications = function() {
             if (!db) return;
             const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
-            set(ref(db, 'notifications/' + cleanKey), null);
-            set(ref(db, 'notifications/isaiah_cung'), null);
-            set(ref(db, 'notifications/rising_star_music_studio'), null);
-            renderCloudNotifications();
-            updateNotifBadge();
+            set(ref(db, 'notifications/' + cleanKey), null).then(() => {
+                cloudNotifications[cleanKey] = {};
+                renderCloudNotifications();
+                updateNotifBadge();
+                alert("All alerts cleared successfully!");
+            }).catch(err => {
+                console.error("Clear error:", err);
+                alert("Failed to clear notifications.");
+            });
         };
 
         window.previewImage = function(event) {
@@ -633,6 +606,7 @@
             filterProviders();
         };
 
+        // Ultra-Fast Optimized Lightweight Rendering
         function renderProviders(list) {
             const container = document.getElementById('providerList');
             const activeList = list.filter(p => p.active !== false);
@@ -644,72 +618,57 @@
             }
 
             const sortedList = [...activeList].sort((a, b) => (b.isVip ? 1 : 0) - (a.isVip ? 1 : 0));
+            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
 
-            container.innerHTML = '';
-            sortedList.forEach(p => {
+            container.innerHTML = sortedList.map(p => {
                 const imgUrl = p.img || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80";
                 const providerLocation = p.location || "Greenwood, Indiana, USA";
 
-                const currentUser = (document.getElementById('pName').value || "").trim().toLowerCase();
-                const canEdit = ADMIN_LIST.includes(currentUser) || (currentUser && currentUser === p.name.toLowerCase());
+                const isOwnerName = currentUser && (currentUser === p.name.trim().toLowerCase());
+                const isRegisteredDevice = (p.ownerDeviceId && p.ownerDeviceId === deviceSessionId);
+                const isAdmin = ADMIN_LIST.includes(currentUser);
+
+                const canEdit = (isOwnerName && isRegisteredDevice) || isAdmin;
                 const encodedName = btoa(encodeURIComponent(p.name));
 
-                const cardDiv = document.createElement('div');
-                cardDiv.className = `provider-card bg-white border ${p.isVip ? 'border-amber-300 ring-1 ring-amber-200' : 'border-slate-100'} rounded-2xl p-4 shadow-sm relative`;
-                
-                cardDiv.innerHTML = `
-                    ${p.isVip ? '<span class="absolute -top-2.5 right-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-sm"><i class="fa-solid fa-crown mr-1"></i> VIP Featured</span>' : ''}
-                    <div class="flex items-start justify-between">
-                        <div class="flex space-x-3">
-                            <img src="${imgUrl}" alt="${p.name}" class="w-14 h-14 rounded-2xl object-cover shadow-sm">
-                            <div>
-                                <h3 class="font-bold text-slate-900">${p.name}</h3>
-                                <p class="text-xs text-emerald-600 font-semibold mt-0.5">${p.title}</p>
-                                <div class="flex items-center space-x-2 mt-1.5 text-xs text-slate-500">
-                                    <span class="text-amber-500 font-bold flex items-center"><i class="fa-solid fa-star mr-1"></i> ${p.rating}</span>
-                                    <span>•</span>
-                                    <span class="text-slate-600 font-medium flex items-center"><i class="fa-solid fa-earth-americas text-emerald-600 mr-1"></i> ${providerLocation}</span>
+                return `
+                    <div class="provider-card bg-white border ${p.isVip ? 'border-amber-300 ring-1 ring-amber-200' : 'border-slate-100'} rounded-2xl p-4 shadow-sm relative mb-4">
+                        ${p.isVip ? '<span class="absolute -top-2.5 right-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-sm"><i class="fa-solid fa-crown mr-1"></i> VIP Featured</span>' : ''}
+                        <div class="flex items-start justify-between">
+                            <div class="flex space-x-3">
+                                <img src="${imgUrl}" alt="${p.name}" class="w-14 h-14 rounded-2xl object-cover shadow-sm" loading="lazy">
+                                <div>
+                                    <h3 class="font-bold text-slate-900">${p.name}</h3>
+                                    <p class="text-xs text-emerald-600 font-semibold mt-0.5">${p.title}</p>
+                                    <div class="flex items-center space-x-2 mt-1.5 text-xs text-slate-500">
+                                        <span class="text-amber-500 font-bold flex items-center"><i class="fa-solid fa-star mr-1"></i> ${p.rating}</span>
+                                        <span>•</span>
+                                        <span class="text-slate-600 font-medium flex items-center"><i class="fa-solid fa-earth-americas text-emerald-600 mr-1"></i> ${providerLocation}</span>
+                                    </div>
                                 </div>
                             </div>
+                            <span class="bg-emerald-50 text-emerald-700 font-bold text-xs px-2.5 py-1 rounded-lg">${p.rate}</span>
                         </div>
-                        <span class="bg-emerald-50 text-emerald-700 font-bold text-xs px-2.5 py-1 rounded-lg">${p.rate}</span>
-                    </div>
-                    <p class="text-xs text-slate-600 mt-3 leading-relaxed">${p.desc}</p>
-                    
-                    <div class="mt-3 bg-slate-50 border border-slate-200/80 rounded-xl p-2 text-center text-[11px] text-slate-500 font-medium">
-                        <i class="fa-solid fa-lock mr-1 text-slate-400"></i> Contact phone locked (Chat & request booking to unlock)
-                    </div>
+                        <p class="text-xs text-slate-600 mt-3 leading-relaxed">${p.desc}</p>
+                        
+                        <div class="mt-3 bg-slate-50 border border-slate-200/80 rounded-xl p-2 text-center text-[11px] text-slate-500 font-medium">
+                            <i class="fa-solid fa-lock mr-1 text-slate-400"></i> Contact phone locked (Chat & request booking to unlock)
+                        </div>
 
-                    <div class="flex space-x-2 mt-3">
-                        <button type="button" class="chat-btn-action flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 shadow-sm shadow-emerald-100 cursor-pointer">
-                            <i class="fa-solid fa-comments"></i>
-                            <span data-i18n="direct_chat">Chat & Inquire</span>
-                        </button>
-                        ${canEdit ? `
-                        <button type="button" class="edit-btn-action bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center justify-center cursor-pointer" title="Edit Profile">
-                            <i class="fa-solid fa-pen-to-square"></i>
-                        </button>` : ''}
+                        <div class="flex space-x-2 mt-3">
+                            <button type="button" onclick="openChatByB64('${encodedName}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 shadow-sm shadow-emerald-100 cursor-pointer">
+                                <i class="fa-solid fa-comments"></i>
+                                <span data-i18n="direct_chat">Chat & Inquire</span>
+                            </button>
+                            ${canEdit ? `
+                            <button type="button" onclick="openEditModal('${p.id}')" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-3 py-2.5 rounded-xl text-xs flex items-center justify-center cursor-pointer" title="Edit Profile">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>` : ''}
+                        </div>
                     </div>
                 `;
+            }).join('');
 
-                const chatBtn = cardDiv.querySelector('.chat-btn-action');
-                if (chatBtn) {
-                    chatBtn.addEventListener('click', () => {
-                        window.openChatByB64(encodedName);
-                    });
-                }
-
-                const editBtn = cardDiv.querySelector('.edit-btn-action');
-                if (editBtn) {
-                    editBtn.addEventListener('click', () => {
-                        window.openEditModal(p.id);
-                    });
-                }
-
-                container.appendChild(cardDiv);
-            });
-            
-            // Re-apply language translations to newly dynamically generated elements
             window.changeLanguage(currentLang);
         }
 
@@ -746,6 +705,16 @@
         window.openEditModal = function(id) {
             const p = providers.find(item => item.id == id);
             if (!p) return;
+
+            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
+            const isOwnerName = currentUser && (currentUser === p.name.trim().toLowerCase());
+            const isRegisteredDevice = (p.ownerDeviceId && p.ownerDeviceId === deviceSessionId);
+            const isAdmin = ADMIN_LIST.includes(currentUser);
+
+            if ((!isOwnerName || !isRegisteredDevice) && !isAdmin) {
+                alert("Access Denied: Customer View Mode. You can only edit from the original registered phone/computer!");
+                return;
+            }
 
             document.getElementById('editProviderId').value = p.id;
             document.getElementById('modalTitle').innerText = "Edit Your Profile / Listing";
@@ -801,6 +770,7 @@
                     desc: document.getElementById('pDesc').value,
                     isVip: isAlreadyVip,
                     active: true,
+                    ownerDeviceId: deviceSessionId,
                     lat: parseFloat(document.getElementById('pLat').value) || 39.6137,
                     lng: parseFloat(document.getElementById('pLng').value) || -86.1064,
                     rating: "5.0"
@@ -813,11 +783,11 @@
                 closePostModal();
                 loggedInProviderName = providerName;
                 localStorage.setItem('nf_logged_provider', providerName);
-                addCloudNotification(providerName, `Listing Published: "${serviceTitle}" (${locationStr})`);
-                alert("Listing successfully published globally!");
+                
+                alert("Listing successfully saved and bound to your device!");
             } catch(err) {
                 console.error("Save Error:", err);
-                alert("Error saving listing to cloud. Please try again.");
+                alert("Error saving listing. Please try again.");
             }
         };
 
@@ -833,12 +803,23 @@
             filterProviders();
         };
 
+        let searchTimeout = null;
+        window.debounceFilter = function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                filterProviders();
+            }, 50);
+        };
+
         window.filterProviders = function() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
+            const rawQuery = document.getElementById('searchInput').value.toLowerCase().trim();
             const filtered = providers.filter(p => {
                 const matchesCat = (currentCategory === 'all' || p.category === currentCategory);
-                const matchesSearch = p.name.toLowerCase().includes(query) || p.title.toLowerCase().includes(query) || (p.location && p.location.toLowerCase().includes(query)) || p.desc.toLowerCase().includes(query);
-                return matchesCat && matchesSearch;
+                if (!matchesCat) return false;
+                if (!rawQuery) return true;
+
+                const searchTarget = `${p.name} ${p.title} ${p.location || ''} ${p.desc} ${p.category}`.toLowerCase();
+                return searchTarget.includes(rawQuery);
             });
             renderProviders(filtered);
         };
@@ -864,7 +845,14 @@
             }
 
             const providerKey = name.replace(/\s+/g, '_').toLowerCase();
-            currentChatId = `${providerKey}_shared_chat`;
+            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
+            const isProviderSelf = currentUser && (currentUser === name.trim().toLowerCase());
+
+            if (isProviderSelf) {
+                currentChatId = `${providerKey}_shared_chat`;
+            } else {
+                currentChatId = `${providerKey}_${deviceSessionId}`;
+            }
 
             loadChatMessages(currentChatId);
             document.getElementById('chatModal').classList.remove('hidden');
@@ -892,7 +880,8 @@
             });
 
             input.value = '';
-            addCloudNotification(currentChatProvider, `New message sent to ${currentChatProvider}.`);
+            
+            addCloudNotification(currentChatProvider, `💬 New message from customer: "${text}"`);
         };
 
         window.sendBookingRequest = function() {
@@ -924,7 +913,7 @@
             document.getElementById('bookingNoteInput').value = '';
             document.getElementById('bookingDrawer').classList.add('hidden');
             
-            addCloudNotification(currentChatProvider, `New Booking Request received for ${dateVal} at ${timeVal}!`);
+            addCloudNotification(currentChatProvider, `📅 New Job Request for ${dateVal} at ${timeVal}!`);
             alert("Booking request sent successfully to provider!");
         };
 
@@ -1108,7 +1097,8 @@
                 cat_moving: "Moving & Hauling", 
                 verified_title: "Verified Nearby Providers", 
                 direct_chat: "Chat & Inquire", 
-                nav_home: "Home" 
+                nav_home: "Home",
+                clear_alerts: "Clear All Alerts"
             },
             my: { 
                 subtitle: "ဒေသတွင်း ဝန်ဆောင်မှု ဈေးကွက်", 
@@ -1130,7 +1120,8 @@
                 cat_moving: "အိမ်ပြောင်းရွှေ့ဝန်ဆောင်မှု", 
                 verified_title: "အနီးအနားရှိ အတည်ပြုပြီး ဝန်ဆောင်မှုပေးသူများ", 
                 direct_chat: "စကားပြောရန်", 
-                nav_home: "ပင်မ" 
+                nav_home: "ပင်မ",
+                clear_alerts: "သတိပေးချက် အားလုံးကို ရှင်းမည်"
             },
             es: { 
                 subtitle: "Mercado de Servicios Locales", 
@@ -1152,7 +1143,8 @@
                 cat_moving: "Mudanzas y Transportes", 
                 verified_title: "Proveedores Cercanos Verificados", 
                 direct_chat: "Chatear y Consultar", 
-                nav_home: "Inicio" 
+                nav_home: "Inicio",
+                clear_alerts: "Borrar todas las alertas"
             },
             hi: { 
                 subtitle: "स्थानीय सेवा बाज़ार", 
@@ -1174,7 +1166,8 @@
                 cat_moving: "मूविंग और हॉलिंग", 
                 verified_title: "सत्यापित नजदीकी सेवा प्रदाता", 
                 direct_chat: "चैट करें और पूछें", 
-                nav_home: "होम" 
+                nav_home: "होम",
+                clear_alerts: "सभी अलर्ट साफ़ करें"
             }
         };
 
