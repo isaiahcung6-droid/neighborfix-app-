@@ -31,12 +31,14 @@
         </div>
 
         <div class="flex items-center space-x-3">
+            <!-- Notification Bell Icon -->
             <button onclick="openNotificationModal()" class="relative text-slate-600 hover:text-emerald-600 p-1.5 rounded-full bg-slate-100 cursor-pointer">
                 <i class="fa-solid fa-bell text-sm"></i>
                 <span id="notifBadge" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
             </button>
 
-            <select id="langSwitch" onchange="changeLanguage(this.value)" class="bg-slate-100 border border-slate-200 text-slate-700 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium">
+            <!-- Language Switcher -->
+            <select id="langSwitch" onchange="changeLanguage(this.value)" class="bg-slate-100 border border-slate-200 text-slate-700 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium cursor-pointer">
                 <option value="en">English</option>
                 <option value="my">မြန်မာ</option>
                 <option value="es">Español</option>
@@ -48,6 +50,7 @@
     <!-- Main Content -->
     <main class="max-w-md mx-auto px-4 mt-5">
         
+        <!-- GPS Status Banner -->
         <div id="gpsStatus" class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 mb-4 flex items-center justify-between text-xs text-emerald-800 shadow-sm">
             <div class="flex items-center space-x-2">
                 <i class="fa-solid fa-location-dot text-emerald-600 text-sm"></i>
@@ -56,6 +59,7 @@
             <button onclick="getUserLocation()" class="bg-emerald-600 text-white font-bold px-2.5 py-1 rounded-lg text-[10px] hover:bg-emerald-700 cursor-pointer">Refresh GPS</button>
         </div>
 
+        <!-- Search Bar -->
         <div class="relative mb-5">
             <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
                 <i class="fa-solid fa-magnifying-glass"></i>
@@ -82,13 +86,16 @@
             <button onclick="filterCat(event, 'moving')" class="cat-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shadow-sm hover:bg-slate-50 transition cursor-pointer" data-i18n="cat_moving">Moving & Hauling</button>
         </div>
 
+        <!-- Providers List Header -->
         <div class="flex justify-between items-center mb-4">
             <h2 class="font-bold text-slate-900 text-base" data-i18n="verified_title">Verified Nearby Providers</h2>
             <span class="text-xs text-slate-500 font-medium" id="providerCount">0 providers</span>
         </div>
 
+        <!-- Provider Cards Container -->
         <div id="providerList" class="space-y-4"></div>
 
+        <!-- Danger Zone -->
         <div class="mt-8 bg-rose-50 border border-rose-200 rounded-2xl p-4 text-center">
             <h3 class="font-bold text-rose-900 text-xs mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Danger Zone</h3>
             <p class="text-[11px] text-rose-700 mb-3">Permanently wipe stale database entries & reset local listings.</p>
@@ -97,6 +104,7 @@
             </button>
         </div>
 
+        <!-- Studio Branding Footer -->
         <div class="mt-6 mb-4 text-center border-t border-slate-200/60 pt-5">
             <p class="text-xs text-slate-400 font-medium">Powered & Media Supported by</p>
             <p class="text-xs font-bold text-emerald-700 mt-0.5 tracking-wide">
@@ -106,6 +114,7 @@
 
     </main>
 
+    <!-- Bottom Navigation Bar -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 py-2 px-6 flex justify-around items-center z-40 shadow-lg">
         <button onclick="resetToHomeAllServices()" class="flex flex-col items-center text-emerald-600 cursor-pointer">
             <i class="fa-solid fa-house text-lg"></i>
@@ -248,7 +257,7 @@
         </div>
     </div>
 
-    <!-- Chat Modal -->
+    <!-- Chat & Booking Modal -->
     <div id="chatModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-4 shadow-2xl flex flex-col max-h-[85vh]">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-3">
@@ -256,6 +265,7 @@
                 <button onclick="closeChat()" class="text-slate-400 hover:text-slate-600 text-lg px-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
+            <!-- Booking Date & Time & Note Selector Drawer -->
             <div id="bookingDrawer" class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 mb-3 hidden">
                 <h4 class="font-bold text-emerald-900 text-xs mb-2 flex items-center"><i class="fa-regular fa-calendar-check text-emerald-600 mr-1.5"></i> Select Booking Date & Time</h4>
                 <div class="grid grid-cols-2 gap-2 mb-2">
@@ -277,8 +287,10 @@
                 </button>
             </div>
 
+            <!-- Chat Messages Area -->
             <div id="chatMessages" class="flex-1 h-56 overflow-y-auto bg-slate-50/80 rounded-2xl p-3 mb-3 space-y-3"></div>
 
+            <!-- Chat Input Area -->
             <div id="chatInputArea" class="flex flex-col space-y-2">
                 <div class="flex space-x-2">
                     <input type="text" id="chatMessageInput" placeholder="Type a message to inquire..." class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
@@ -301,7 +313,7 @@
                 <i class="fa-solid fa-file-invoice-dollar"></i>
             </div>
             <h3 class="font-bold text-slate-900 text-base mb-1">Confirm Booking & Pay Fee</h3>
-            <p id="feeDescriptionText" class="text-xs text-slate-600 mb-3">Accepting this booking requires a System Lead Fee. Once confirmed, fee is non-refundable.</p>
+            <p id="feeDescriptionText" class="text-xs text-slate-600 mb-3">Accepting this booking requires a System Lead Fee.</p>
             
             <div id="stripeFeeContainer" class="bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3 text-left">
                 <div id="provider-card-element"></div>
@@ -318,7 +330,7 @@
     <div id="notificationModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-4 shadow-2xl max-h-[80vh] flex flex-col z-50">
             <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
-                <h3 class="font-bold text-slate-900 text-sm flex items-center"><i class="fa-solid fa-bell text-emerald-600 mr-2"></i> Provider Alerts & Incoming Bookings (<span id="activeProviderNotifLabel">Provider</span>)</h3>
+                <h3 class="font-bold text-slate-900 text-sm flex items-center"><i class="fa-solid fa-bell text-emerald-600 mr-2"></i> Provider Alerts (<span id="activeProviderNotifLabel">Provider</span>)</h3>
                 <button onclick="closeNotificationModal()" class="text-slate-400 hover:text-slate-600 text-lg px-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="notificationList" class="flex-1 overflow-y-auto space-y-2 text-xs py-1"></div>
@@ -326,20 +338,10 @@
         </div>
     </div>
 
-    <!-- Script Logic -->
+    <!-- Complete Script Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, query, limitToLast, update, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-        const notifSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-        notifSound.volume = 1.0;
-
-        document.addEventListener('click', () => {
-            notifSound.play().then(() => {
-                notifSound.pause();
-                notifSound.currentTime = 0;
-            }).catch(() => {});
-        }, { once: true });
 
         const firebaseConfig = {
           apiKey: "AIzaSyBTrOCRMWMSklrIIdCacuEk_ApidP3kzJA",
@@ -356,7 +358,7 @@
             const app = initializeApp(firebaseConfig);
             db = getDatabase(app);
         } catch(e) {
-            console.log("Firebase Init Warning:", e);
+            console.log("Firebase Warning:", e);
         }
 
         let activeChatRef = null;
@@ -374,16 +376,13 @@
 
         try {
             if (typeof Stripe !== 'undefined') {
-                const STRIPE_LIVE_PUBLISHABLE_KEY = "pk_live_YOUR_ACTUAL_LIVE_KEY_HERE";
-                stripe = Stripe(STRIPE_LIVE_PUBLISHABLE_KEY);
+                stripe = Stripe("pk_live_YOUR_ACTUAL_LIVE_KEY_HERE");
                 const elements = stripe.elements();
                 cardElement = elements.create('card');
                 providerCardElement = elements.create('card');
             }
-        } catch (e) {
-            console.log("Stripe initialization skipped:", e);
-        }
-        
+        } catch (e) {}
+
         let currentLang = 'en';
         let userLat = null;
         let userLng = null;
@@ -393,13 +392,13 @@
         let pendingBookingMessageKey = null;
 
         const ADMIN_LIST = ["isaiah cung", "rising star music studio", "salai"];
-        
         let providers = [];
         let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || ADMIN_LIST;
         let cloudNotifications = {};
 
-        let loggedInProviderName = localStorage.getItem('nf_logged_provider'] || "Rising Star Music Studio";
-        document.getElementById('pName').value = loggedInProviderName;
+        let loggedInProviderName = localStorage.getItem('nf_logged_provider') || "Rising Star Music Studio";
+        const pNameInput = document.getElementById('pName');
+        if (pNameInput) pNameInput.value = loggedInProviderName;
 
         window.updateActiveProviderView = function() {
             const val = document.getElementById('pName').value.trim();
@@ -447,16 +446,12 @@
         function addCloudNotification(providerName, text) {
             if (!db || !providerName) return;
             const cleanProviderKey = providerName.replace(/\s+/g, '_').toLowerCase();
-            const providerNotifRef = ref(db, 'notifications/' + cleanProviderKey);
-            
-            push(providerNotifRef, {
+            push(ref(db, 'notifications/' + cleanProviderKey), {
                 text: text,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 timestamp: Date.now(),
                 unread: true
             });
-
-            notifSound.play().catch(() => {});
         }
 
         function updateNotifBadge() {
@@ -470,11 +465,13 @@
             }
 
             const badge = document.getElementById('notifBadge');
-            if (totalUnread > 0) {
-                badge.innerText = totalUnread;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
+            if (badge) {
+                if (totalUnread > 0) {
+                    badge.innerText = totalUnread;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
             }
         }
 
@@ -493,7 +490,7 @@
             const notifsArray = Object.entries(providerNotifsObj).map(([id, val]) => ({ id, ...val })).sort((a, b) => b.timestamp - a.timestamp);
 
             if (notifsArray.length === 0) {
-                listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-6">No incoming chat or booking alerts found for "${loggedInProviderName}".</p>`;
+                listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-6">No incoming alerts found for "${loggedInProviderName}".</p>`;
             } else {
                 listContainer.innerHTML = notifsArray.map(n => `
                     <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col space-y-1 shadow-sm">
@@ -516,8 +513,6 @@
                 renderCloudNotifications();
                 updateNotifBadge();
                 alert("All alerts cleared successfully!");
-            }).catch(() => {
-                alert("Failed to clear notifications.");
             });
         };
 
@@ -625,9 +620,9 @@
                                 <h3 class="font-bold text-slate-900">${p.name}</h3>
                                 <p class="text-xs text-emerald-600 font-semibold mt-0.5">${p.title}</p>
                                 <div class="flex items-center space-x-2 mt-1.5 text-xs text-slate-500">
-                                    <span class="text-amber-500 font-bold flex items-center"><i class="fa-solid fa-star mr-1"></i> ${p.rating}</span>
+                                    <span class="text-amber-500 font-bold flex items-center"><i class="fa-solid fa-star mr-1"></i> ${p.rating || '5.0'}</span>
                                     <span>•</span>
-                                    <span class="text-slate-600 font-medium flex items-center"><i class="fa-solid fa-earth-americas text-emerald-600 mr-1"></i> ${providerLocation}</span>
+                                    <span class="text-slate-600 font-medium flex items-center cursor-pointer" onclick="openMapModal('${p.name}', ${p.lat || 39.6137}, ${p.lng || -86.1064})"><i class="fa-solid fa-earth-americas text-emerald-600 mr-1"></i> ${providerLocation}</span>
                                 </div>
                             </div>
                         </div>
@@ -656,9 +651,12 @@
                 });
 
                 if (canEdit) {
-                    cardDiv.querySelector('.edit-btn-action').addEventListener('click', () => {
-                        window.openEditModal(p.id);
-                    });
+                    const editBtn = cardDiv.querySelector('.edit-btn-action');
+                    if(editBtn) {
+                        editBtn.addEventListener('click', () => {
+                            window.openEditModal(p.id);
+                        });
+                    }
                 }
 
                 fragment.appendChild(cardDiv);
@@ -668,6 +666,25 @@
             container.appendChild(fragment);
             window.changeLanguage(currentLang);
         }
+
+        window.openMapModal = function(name, lat, lng) {
+            document.getElementById('mapTitle').innerText = name + " Location Map";
+            document.getElementById('googleMapIframe').src = `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
+            document.getElementById('getDirectionBtn').href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+            document.getElementById('mapModal').classList.remove('hidden');
+        };
+
+        window.closeMapModal = function() { document.getElementById('mapModal').classList.add('hidden'); };
+
+        window.capturePostLocation = function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    document.getElementById('pLat').value = pos.coords.latitude;
+                    document.getElementById('pLng').value = pos.coords.longitude;
+                    document.getElementById('gpsPostBtnText').innerText = "GPS Location Captured ✓";
+                });
+            }
+        };
 
         window.openPostModal = function() {
             document.getElementById('editProviderId').value = "";
@@ -705,10 +722,10 @@
             document.getElementById('pLocation').value = p.location || "Greenwood, Indiana, USA";
             document.getElementById('pTitle').value = p.title;
             document.getElementById('pRate').value = p.rate;
-            document.getElementById('pPhone').value = p.phone;
+            document.getElementById('pPhone').value = p.phone || '';
             document.getElementById('pDesc').value = p.desc;
-            document.getElementById('pLat').value = p.lat;
-            document.getElementById('pLng').value = p.lng;
+            document.getElementById('pLat').value = p.lat || '';
+            document.getElementById('pLng').value = p.lng || '';
 
             document.getElementById('postModal').classList.remove('hidden');
             window.updateListingFeeUI();
@@ -775,39 +792,8 @@
                 localStorage.setItem('nf_logged_provider', providerName);
                 alert("Listing successfully published globally!");
             } catch(err) {
-                alert("Error saving listing to cloud. Please try again.");
+                alert("Error saving listing.");
             }
-        };
-
-        window.filterCat = function(e, cat) {
-            currentCategory = cat;
-            document.querySelectorAll('.cat-btn').forEach(btn => {
-                btn.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
-                btn.classList.add('bg-white', 'border', 'border-slate-200', 'text-slate-600');
-            });
-            e.target.closest('button').classList.remove('bg-white', 'border', 'border-slate-200', 'text-slate-600');
-            e.target.closest('button').classList.add('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
-            filterProviders();
-        };
-
-        let searchTimeout = null;
-        window.debounceFilter = function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                filterProviders();
-            }, 200);
-        };
-
-        window.filterProviders = function() {
-            const rawQuery = document.getElementById('searchInput').value.toLowerCase().trim();
-            const filtered = providers.filter(p => {
-                const matchesCat = (currentCategory === 'all' || p.category === currentCategory);
-                if (!matchesCat) return false;
-                if (!rawQuery) return true;
-                const fullText = (p.name + " " + p.title + " " + (p.location || "") + " " + p.desc + " " + p.category).toLowerCase();
-                return fullText.includes(rawQuery);
-            });
-            renderProviders(filtered);
         };
 
         window.openChatByB64 = function(b64Name) {
@@ -937,7 +923,7 @@
         window.processProviderFeeAndConfirm = async function(isBypass = false) {
             const btn = document.getElementById('payConfirmBtn');
             btn.disabled = true;
-            btn.innerText = "Processing Live Payment...";
+            btn.innerText = "Processing...";
 
             if (!isBypass && stripe && providerCardElement) {
                 const res = await stripe.createToken(providerCardElement, { name: currentChatProvider });
@@ -960,11 +946,11 @@
             btn.disabled = false;
             btn.innerText = "Confirm & Accept";
             closeFeeModal();
-            alert(isBypass ? "Admin Booking Approved (Fee Bypassed)!" : "Live Payment Successful & Booking Confirmed!");
+            alert("Booking Confirmed!");
         };
 
         window.cancelBookingRequest = function(msgKey) {
-            if (db && currentChatId && confirm("Are you sure you want to cancel/decline this booking request?")) {
+            if (db && currentChatId && confirm("Cancel/decline this booking?")) {
                 update(ref(db, `chats/${currentChatId}/${msgKey}`), { status: 'cancelled' });
             }
         };
@@ -995,7 +981,7 @@
 
                 const displayPhone = (isAccepted && providerObj && providerObj.phone) ? providerObj.phone : "Hidden until accepted";
                 let statusBadge = `<span class="bg-amber-200 text-amber-900 text-[10px] font-bold px-2.5 py-1 rounded-full">Pending Response</span>`;
-                if (isAccepted) statusBadge = `<span class="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-circle-check mr-1"></i> Booking Confirmed (5h Auto-Lock)</span>`;
+                if (isAccepted) statusBadge = `<span class="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-circle-check mr-1"></i> Booking Confirmed (5h)</span>`;
                 if (m.status === 'cancelled') statusBadge = `<span class="bg-rose-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-circle-xmark mr-1"></i> Cancelled</span>`;
 
                 card.innerHTML = `
@@ -1011,12 +997,12 @@
 
                     ${isAccepted ? `
                         <div class="bg-emerald-100/70 border border-emerald-300 rounded-xl p-2.5 text-center mt-2">
-                            <p class="text-[11px] font-bold text-emerald-900 mb-1"><i class="fa-solid fa-phone mr-1"></i> Provider Contact Unlocked (Auto-locks in 5 hrs):</p>
+                            <p class="text-[11px] font-bold text-emerald-900 mb-1"><i class="fa-solid fa-phone mr-1"></i> Phone Unlocked:</p>
                             <a href="tel:${displayPhone}" class="text-xs font-extrabold text-emerald-700 underline">${displayPhone}</a>
                         </div>
                     ` : `
                         <div class="bg-slate-100 border border-slate-200 rounded-xl p-2 text-center text-[11px] text-slate-500 font-medium">
-                            <i class="fa-solid fa-lock mr-1 text-slate-400"></i> Contact hidden until booking accepted
+                            <i class="fa-solid fa-lock mr-1 text-slate-400"></i> Contact hidden until accepted
                         </div>
                     `}
 
@@ -1032,6 +1018,37 @@
                 msgBox.scrollTop = msgBox.scrollHeight;
             }
         }
+
+        window.filterCat = function(e, cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
+                btn.classList.add('bg-white', 'border', 'border-slate-200', 'text-slate-600');
+            });
+            e.target.closest('button').classList.remove('bg-white', 'border', 'border-slate-200', 'text-slate-600');
+            e.target.closest('button').classList.add('bg-emerald-600', 'text-white', 'shadow-sm', 'shadow-emerald-200');
+            filterProviders();
+        };
+
+        let searchTimeout = null;
+        window.debounceFilter = function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                filterProviders();
+            }, 200);
+        };
+
+        window.filterProviders = function() {
+            const rawQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+            const filtered = providers.filter(p => {
+                const matchesCat = (currentCategory === 'all' || p.category === currentCategory);
+                if (!matchesCat) return false;
+                if (!rawQuery) return true;
+                const fullText = (p.name + " " + p.title + " " + (p.location || "") + " " + p.desc + " " + p.category).toLowerCase();
+                return fullText.includes(rawQuery);
+            });
+            renderProviders(filtered);
+        };
 
         const translations = {
             en: { subtitle: "Local Services Marketplace", search_placeholder: "Search photo, video, Greenwood, NC...", cat_all: "All Services", cat_media: "Video & Photography", cat_music_class: "Music Classes", cat_sound: "Sound & Live Stream", cat_hvac: "Electrical, Heating & A/C", cat_roofing: "Roofing & Painting", cat_security: "Home Security", cat_plumbing: "Plumbing", cat_appliance: "Appliance Repair", cat_handyman: "Handyman", cat_cleaning: "Home Cleaning", cat_lawn: "Lawn & Yard", cat_towing: "Towing Service", cat_locksmith: "Locksmith", cat_moving: "Moving & Hauling", verified_title: "Verified Nearby Providers", direct_chat: "Chat & Inquire", nav_home: "Home", clear_alerts: "Clear All Alerts" },
