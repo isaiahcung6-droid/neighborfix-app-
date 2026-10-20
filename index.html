@@ -448,7 +448,7 @@
 
         function checkForNewIncomingAlerts(data) {
             const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
-            const pNotifs = data[cleanKey] || data['isaiah_cung'] || data['rising_star_music_studio'];
+            const pNotifs = data[cleanKey];
             if (pNotifs) {
                 const entries = Object.values(pNotifs);
                 const latest = entries[entries.length - 1];
@@ -494,16 +494,12 @@
             let totalUnread = 0;
             const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
             
-            const checkKeys = [cleanKey, 'isaiah_cung', 'rising_star_music_studio'];
-
-            checkKeys.forEach(key => {
-                const pNotifs = cloudNotifications[key];
-                if (pNotifs) {
-                    Object.values(pNotifs).forEach(n => {
-                        if (n.unread) totalUnread++;
-                    });
-                }
-            });
+            const pNotifs = cloudNotifications[cleanKey];
+            if (pNotifs) {
+                Object.values(pNotifs).forEach(n => {
+                    if (n.unread) totalUnread++;
+                });
+            }
 
             const badge = document.getElementById('notifBadge');
             if (totalUnread > 0) {
@@ -526,12 +522,6 @@
 
             const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
             let providerNotifsObj = cloudNotifications[cleanKey] || {};
-            
-            providerNotifsObj = { 
-                ...(cloudNotifications['isaiah_cung'] || {}), 
-                ...(cloudNotifications['rising_star_music_studio'] || {}),
-                ...providerNotifsObj 
-            };
 
             const notifsArray = Object.entries(providerNotifsObj).map(([id, val]) => ({ id, ...val })).sort((a, b) => b.timestamp - a.timestamp);
 
@@ -554,11 +544,15 @@
         window.clearNotifications = function() {
             if (!db) return;
             const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
-            set(ref(db, 'notifications/' + cleanKey), null);
-            set(ref(db, 'notifications/isaiah_cung'), null);
-            set(ref(db, 'notifications/rising_star_music_studio'), null);
-            renderCloudNotifications();
-            updateNotifBadge();
+            set(ref(db, 'notifications/' + cleanKey), null).then(() => {
+                cloudNotifications[cleanKey] = {};
+                renderCloudNotifications();
+                updateNotifBadge();
+                alert("All alerts cleared successfully!");
+            }).catch(err => {
+                console.error("Clear error:", err);
+                alert("Failed to clear notifications.");
+            });
         };
 
         window.previewImage = function(event) {
@@ -651,7 +645,7 @@
                 const imgUrl = p.img || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80";
                 const providerLocation = p.location || "Greenwood, Indiana, USA";
 
-                // Strict Ownership Security Check for Editing
+                // Strict Ownership Security Check for Editing (Exact Name Match)
                 const currentUser = (loggedInProviderName || "").trim().toLowerCase();
                 const isOwner = currentUser && (currentUser === p.name.trim().toLowerCase());
                 const isAdmin = ADMIN_LIST.includes(currentUser);
@@ -827,7 +821,6 @@
                 loggedInProviderName = providerName;
                 localStorage.setItem('nf_logged_provider', providerName);
                 
-                // Listing တင်လိုက်ရုံဖြင့် Notification လုံးဝ မထွက်စေရန် ဖြုတ်ထားပါသည်
                 alert("Listing successfully published globally!");
             } catch(err) {
                 console.error("Save Error:", err);
@@ -881,7 +874,6 @@
             const currentUser = (loggedInProviderName || "").trim().toLowerCase();
             const isProviderSelf = currentUser && (currentUser === name.trim().toLowerCase());
 
-            // Chat Privacy Isolation: Provider ဝင်လျှင် shared chat၊ Customer ဘက်မှဆိုလျှင် deviceSessionId ဖြင့် သီးသန့် ID သုံးမည်
             if (isProviderSelf) {
                 currentChatId = `${providerKey}_shared_chat`;
             } else {
@@ -915,7 +907,6 @@
 
             input.value = '';
             
-            // Chat Message ပို့မှသာ Provider ဆီသို့ Notification ဝင်မည်
             addCloudNotification(currentChatProvider, `💬 New message from customer: "${text}"`);
         };
 
@@ -948,7 +939,6 @@
             document.getElementById('bookingNoteInput').value = '';
             document.getElementById('bookingDrawer').classList.add('hidden');
             
-            // Booking Request တောင်းဆိုမှသာ Provider ဆီသို့ Notification ဝင်မည်
             addCloudNotification(currentChatProvider, `📅 New Job Request for ${dateVal} at ${timeVal}!`);
             alert("Booking request sent successfully to provider!");
         };
