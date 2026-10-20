@@ -118,7 +118,7 @@
         </button>
     </nav>
 
-    <!-- Protected Post / Edit Service Modal (Restricted Access) -->
+    <!-- Protected Post / Edit Service Modal (Device Restricted) -->
     <div id="postModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
@@ -367,6 +367,7 @@
         let cardMounted = false;
         let providerCardMounted = false;
 
+        // Unique Device Session Identifier
         let deviceSessionId = localStorage.getItem('nf_device_session');
         if (!deviceSessionId) {
             deviceSessionId = 'device_' + Math.random().toString(36).substring(2, 9);
@@ -399,7 +400,7 @@
         let vipMembers = JSON.parse(localStorage.getItem('nf_vip_members')) || ADMIN_LIST;
         let cloudNotifications = {};
 
-        // Active Provider Session User
+        // Active Provider Session Name
         let loggedInProviderName = localStorage.getItem('nf_logged_provider') || "Rising Star Music Studio";
         if(document.getElementById('pName')) document.getElementById('pName').value = loggedInProviderName;
 
@@ -605,6 +606,7 @@
             filterProviders();
         };
 
+        // Chunk Rendering Optimization for Instant UI Response
         function renderProviders(list) {
             const container = document.getElementById('providerList');
             const activeList = list.filter(p => p.active !== false);
@@ -616,18 +618,19 @@
             }
 
             const sortedList = [...activeList].sort((a, b) => (b.isVip ? 1 : 0) - (a.isVip ? 1 : 0));
-            const fragment = document.createDocumentFragment();
+            container.innerHTML = '';
 
-            sortedList.forEach(p => {
+            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
+
+            function createCardElement(p) {
                 const imgUrl = p.img || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80";
                 const providerLocation = p.location || "Greenwood, Indiana, USA";
 
-                // Strict Ownership Check: Only display Edit button if currently logged in user matches the provider name or admin
-                const currentUser = (loggedInProviderName || "").trim().toLowerCase();
-                const isOwner = currentUser && (currentUser === p.name.trim().toLowerCase());
+                const isOwnerName = currentUser && (currentUser === p.name.trim().toLowerCase());
+                const isRegisteredDevice = (p.ownerDeviceId && p.ownerDeviceId === deviceSessionId);
                 const isAdmin = ADMIN_LIST.includes(currentUser);
-                const canEdit = isOwner || isAdmin;
 
+                const canEdit = (isOwnerName && isRegisteredDevice) || isAdmin;
                 const encodedName = btoa(encodeURIComponent(p.name));
 
                 const cardDiv = document.createElement('div');
@@ -682,11 +685,25 @@
                     });
                 }
 
-                fragment.appendChild(cardDiv);
-            });
-            
-            container.innerHTML = '';
-            container.appendChild(fragment);
+                return cardDiv;
+            }
+
+            // Render First Batch (10 items) Instantly
+            const initialChunk = sortedList.slice(0, 10);
+            const firstFragment = document.createDocumentFragment();
+            initialChunk.forEach(p => firstFragment.appendChild(createCardElement(p)));
+            container.appendChild(firstFragment);
+
+            // Render Remaining Items Async to keep UI ultra responsive
+            if (sortedList.length > 10) {
+                setTimeout(() => {
+                    const remainingChunk = sortedList.slice(10);
+                    const remainingFragment = document.createDocumentFragment();
+                    remainingChunk.forEach(p => remainingFragment.appendChild(createCardElement(p)));
+                    container.appendChild(remainingFragment);
+                }, 50);
+            }
+
             window.changeLanguage(currentLang);
         }
 
@@ -725,12 +742,12 @@
             if (!p) return;
 
             const currentUser = (loggedInProviderName || "").trim().toLowerCase();
-            const isOwner = currentUser && (currentUser === p.name.trim().toLowerCase());
+            const isOwnerName = currentUser && (currentUser === p.name.trim().toLowerCase());
+            const isRegisteredDevice = (p.ownerDeviceId && p.ownerDeviceId === deviceSessionId);
             const isAdmin = ADMIN_LIST.includes(currentUser);
 
-            // Block unauthorized customer edit attempts
-            if (!isOwner && !isAdmin) {
-                alert("Access Denied: Customers have Read-Only view access. Profile editing is restricted to the rightful provider!");
+            if ((!isOwnerName || !isRegisteredDevice) && !isAdmin) {
+                alert("Access Denied: Customer View Mode. You can only edit from the original registered phone/computer!");
                 return;
             }
 
@@ -788,6 +805,7 @@
                     desc: document.getElementById('pDesc').value,
                     isVip: isAlreadyVip,
                     active: true,
+                    ownerDeviceId: deviceSessionId,
                     lat: parseFloat(document.getElementById('pLat').value) || 39.6137,
                     lng: parseFloat(document.getElementById('pLng').value) || -86.1064,
                     rating: "5.0"
@@ -801,7 +819,7 @@
                 loggedInProviderName = providerName;
                 localStorage.setItem('nf_logged_provider', providerName);
                 
-                alert("Listing successfully saved!");
+                alert("Listing successfully saved and bound to your device!");
             } catch(err) {
                 console.error("Save Error:", err);
                 alert("Error saving listing. Please try again.");
@@ -825,7 +843,7 @@
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 filterProviders();
-            }, 150);
+            }, 100);
         };
 
         window.filterProviders = function() {
@@ -835,8 +853,8 @@
                 if (!matchesCat) return false;
                 if (!rawQuery) return true;
 
-                const fullText = (p.name + " " + p.title + " " + (p.location || "") + " " + p.desc + " " + p.category).toLowerCase();
-                return fullText.includes(rawQuery);
+                const searchTarget = `${p.name} ${p.title} ${p.location || ''} ${p.desc} ${p.category}`.toLowerCase();
+                return searchTarget.includes(rawQuery);
             });
             renderProviders(filtered);
         };
