@@ -428,8 +428,11 @@
             }
         } catch (e) {}
 
-        let currentLang = localStorage.getItem('nf_app_lang') || 'en';
-        document.getElementById('langSwitch').value = currentLang;
+        // App ထွက်ပြီး ပြန်ဝင်ချိန်တိုင်း Main Home ကို English အဖြစ် အမြဲစတင်စေရန်
+        let currentLang = 'en';
+        localStorage.removeItem('nf_app_lang');
+        const langSwitchEl = document.getElementById('langSwitch');
+        if (langSwitchEl) langSwitchEl.value = 'en';
 
         let currentCategory = 'all';
         let currentChatProvider = '';
