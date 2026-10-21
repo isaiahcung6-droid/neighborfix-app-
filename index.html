@@ -280,7 +280,6 @@
                         <input type="time" id="bookingTimeInput" class="w-full bg-white border border-emerald-200 rounded-xl p-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                     </div>
                 </div>
-                <!-- Added Customer Phone Number Input Field -->
                 <div class="mb-2">
                     <label class="block text-[10px] font-semibold text-emerald-800 mb-1">Customer Phone Number</label>
                     <input type="tel" id="bookingPhoneInput" placeholder="e.g. +1 317-123-4567" class="w-full bg-white border border-emerald-200 rounded-xl p-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
@@ -349,7 +348,7 @@
         </div>
     </div>
 
-    <!-- Secured Private Chat Engine -->
+    <!-- Clickable Notification Chat Engine -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, query, limitToLast, update, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -439,21 +438,25 @@
             }, { onlyOnce: false });
         }
 
-        function addCloudNotification(providerName, text) {
+        function addCloudNotification(providerName, text, targetChatId = '') {
             if (!db || !providerName) return;
             const cleanProviderKey = providerName.replace(/\s+/g, '_').toLowerCase();
             push(ref(db, 'notifications/' + cleanProviderKey), {
                 text: text,
+                chatId: targetChatId,
+                providerName: providerName,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 timestamp: Date.now(),
                 unread: true
             });
         }
 
-        function addCustomerNotification(customerSessionId, text) {
+        function addCustomerNotification(customerSessionId, text, targetChatId = '', providerName = '') {
             if (!db || !customerSessionId) return;
             push(ref(db, 'customer_notifications/' + customerSessionId), {
                 text: text,
+                chatId: targetChatId,
+                providerName: providerName,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 timestamp: Date.now(),
                 unread: true
@@ -509,13 +512,28 @@
                 listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-6">No incoming alerts found.</p>`;
             } else {
                 listContainer.innerHTML = notifsArray.map(n => `
-                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col space-y-1 shadow-sm">
-                        <p class="text-slate-900 font-bold text-xs"><i class="fa-solid fa-bell text-amber-600 mr-1"></i> ${n.text}</p>
+                    <div onclick="handleNotificationClick('${n.chatId || ''}', '${n.providerName || loggedInProviderName}')" class="bg-amber-50 border border-amber-200 hover:bg-amber-100 rounded-xl p-3 flex flex-col space-y-1 shadow-sm cursor-pointer transition">
+                        <p class="text-slate-900 font-bold text-xs flex items-center justify-between">
+                            <span><i class="fa-solid fa-bell text-amber-600 mr-1"></i> ${n.text}</span>
+                            <i class="fa-solid fa-chevron-right text-[10px] text-amber-700"></i>
+                        </p>
                         <span class="text-[10px] text-slate-500">${n.time}</span>
                     </div>
                 `).join('');
             }
         }
+
+        window.handleNotificationClick = function(chatId, providerName) {
+            closeNotificationModal();
+            if (providerName) {
+                openChat(providerName);
+                if (chatId) {
+                    currentChatId = chatId;
+                    if (activeChatRef && db) off(activeChatRef);
+                    loadChatMessages(chatId);
+                }
+            }
+        };
 
         window.closeNotificationModal = function() {
             document.getElementById('notificationModal').classList.add('hidden');
@@ -783,7 +801,7 @@
                     isVip: isAlreadyVip,
                     active: true,
                     lat: parseFloat(document.getElementById('pLat').value) || 39.6137,
-                    lng: parseFloat(document.getElementById('pLng').value) || '-86.1064',
+                    lng: parseFloat(document.getElementById('pLng').value) || -86.1064,
                     rating: "5.0"
                 };
 
@@ -902,10 +920,10 @@
 
             input.value = '';
             if (senderType === 'user') {
-                addCloudNotification(currentChatProvider, `💬 New message from customer: "${text}"`);
+                addCloudNotification(currentChatProvider, `💬 New message from customer: "${text}"`, currentChatId);
             } else {
                 const custId = currentChatId.split('_').pop();
-                addCustomerNotification(custId, `💬 New message from ${currentChatProvider}`);
+                addCustomerNotification(custId, `💬 New message from ${currentChatProvider}`, currentChatId, currentChatProvider);
             }
         };
 
@@ -943,7 +961,7 @@
             document.getElementById('bookingNoteInput').value = '';
             document.getElementById('bookingDrawer').classList.add('hidden');
             
-            addCloudNotification(currentChatProvider, `📅 New Job Request for ${dateVal}!`);
+            addCloudNotification(currentChatProvider, `📅 New Job Request for ${dateVal}!`, currentChatId);
             alert("Booking request sent!");
         };
 
@@ -1013,10 +1031,10 @@
                     status: 'accepted',
                     acceptedAt: Date.now() 
                 });
-                addCloudNotification(currentChatProvider, `Booking confirmed and lead unlocked!`);
+                addCloudNotification(currentChatProvider, `Booking confirmed and lead unlocked!`, currentChatId);
 
                 const custId = currentChatId.split('_').pop();
-                addCustomerNotification(custId, `✅ Your booking request has been accepted by ${currentChatProvider}! Contact & Address unlocked for 2 hours.`);
+                addCustomerNotification(custId, `✅ Your booking request has been accepted by ${currentChatProvider}! Contact & Address unlocked for 2 hours.`, currentChatId, currentChatProvider);
             }
 
             btn.disabled = false;
@@ -1070,7 +1088,6 @@
                     isAccepted = false;
                 }
 
-                // Provider phone and Customer phone handling
                 const providerPhone = (providerObj && providerObj.phone) ? providerObj.phone : "";
                 const displayProviderPhone = (isAccepted && providerPhone) ? providerPhone : "Hidden until accepted";
                 const displayCustomerPhone = (isAccepted && m.customerPhone) ? m.customerPhone : "Hidden until accepted";
