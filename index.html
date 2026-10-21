@@ -261,15 +261,15 @@
                 <button onclick="closeChat()" class="text-slate-400 hover:text-slate-600 text-lg px-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
-            <!-- Provider Thread Switcher (Visible when logged in as Provider) -->
+            <!-- Provider Thread Switcher (Visible only to the Provider) -->
             <div id="providerThreadSelectorContainer" class="bg-amber-50 border border-amber-200 rounded-xl p-2 mb-2 hidden flex items-center justify-between text-xs">
                 <span class="font-bold text-amber-900"><i class="fa-solid fa-users mr-1"></i> Customer Thread:</span>
                 <select id="providerThreadSelect" onchange="switchProviderThread(this.value)" class="bg-white border border-amber-300 rounded-lg px-2 py-1 text-xs font-semibold focus:outline-none"></select>
             </div>
 
-            <!-- Booking Drawer with Address -->
+            <!-- Booking Drawer with Address & Phone Number Input -->
             <div id="bookingDrawer" class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 mb-3 hidden">
-                <h4 class="font-bold text-emerald-900 text-xs mb-2 flex items-center"><i class="fa-regular fa-calendar-check text-emerald-600 mr-1.5"></i> Select Booking Date, Time & Address</h4>
+                <h4 class="font-bold text-emerald-900 text-xs mb-2 flex items-center"><i class="fa-regular fa-calendar-check text-emerald-600 mr-1.5"></i> Select Booking Date, Time, Phone & Address</h4>
                 <div class="grid grid-cols-2 gap-2 mb-2">
                     <div>
                         <label class="block text-[10px] font-semibold text-emerald-800 mb-1">Date</label>
@@ -279,6 +279,11 @@
                         <label class="block text-[10px] font-semibold text-emerald-800 mb-1">Time</label>
                         <input type="time" id="bookingTimeInput" class="w-full bg-white border border-emerald-200 rounded-xl p-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                     </div>
+                </div>
+                <!-- Added Customer Phone Number Input Field -->
+                <div class="mb-2">
+                    <label class="block text-[10px] font-semibold text-emerald-800 mb-1">Customer Phone Number</label>
+                    <input type="tel" id="bookingPhoneInput" placeholder="e.g. +1 317-123-4567" class="w-full bg-white border border-emerald-200 rounded-xl p-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                 </div>
                 <div class="mb-2">
                     <label class="block text-[10px] font-semibold text-emerald-800 mb-1">Customer Address / Location</label>
@@ -344,7 +349,7 @@
         </div>
     </div>
 
-    <!-- Ultra-Fast Script Engine with Customer Notifications & 2-Hour Auto-Lock -->
+    <!-- Secured Private Chat Engine -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, query, limitToLast, update, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -426,7 +431,6 @@
                 updateNotifBadge();
             }, { onlyOnce: false });
 
-            // Customer Notifications Listener
             const custNotifRef = query(ref(db, 'customer_notifications/' + deviceSessionId), limitToLast(15));
             onValue(custNotifRef, (snapshot) => {
                 const data = snapshot.val();
@@ -900,7 +904,6 @@
             if (senderType === 'user') {
                 addCloudNotification(currentChatProvider, `💬 New message from customer: "${text}"`);
             } else {
-                // If provider replies, send notification to customer
                 const custId = currentChatId.split('_').pop();
                 addCustomerNotification(custId, `💬 New message from ${currentChatProvider}`);
             }
@@ -909,11 +912,12 @@
         window.sendBookingRequest = function() {
             const dateVal = document.getElementById('bookingDateInput').value;
             const timeVal = document.getElementById('bookingTimeInput').value;
+            const phoneVal = document.getElementById('bookingPhoneInput').value.trim();
             const addressVal = document.getElementById('bookingAddressInput').value.trim();
             const noteVal = document.getElementById('bookingNoteInput').value.trim();
 
-            if (!dateVal || !timeVal || !addressVal) {
-                alert("Please fill in Date, Time, and Customer Address.");
+            if (!dateVal || !timeVal || !phoneVal || !addressVal) {
+                alert("Please fill in Date, Time, Phone Number, and Address.");
                 return;
             }
 
@@ -925,6 +929,7 @@
                 type: 'booking_request',
                 date: dateVal,
                 time: timeVal,
+                customerPhone: phoneVal,
                 address: addressVal,
                 note: noteVal || "No additional notes",
                 status: 'pending',
@@ -933,6 +938,7 @@
 
             document.getElementById('bookingDateInput').value = '';
             document.getElementById('bookingTimeInput').value = '';
+            document.getElementById('bookingPhoneInput').value = '';
             document.getElementById('bookingAddressInput').value = '';
             document.getElementById('bookingNoteInput').value = '';
             document.getElementById('bookingDrawer').classList.add('hidden');
@@ -1009,7 +1015,6 @@
                 });
                 addCloudNotification(currentChatProvider, `Booking confirmed and lead unlocked!`);
 
-                // Send Notification to Customer
                 const custId = currentChatId.split('_').pop();
                 addCustomerNotification(custId, `✅ Your booking request has been accepted by ${currentChatProvider}! Contact & Address unlocked for 2 hours.`);
             }
@@ -1058,15 +1063,17 @@
                 card.className = "w-full bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 shadow-sm text-slate-800";
                 
                 const providerObj = providers.find(p => p.name.toLowerCase() === currentChatProvider.toLowerCase());
-                const TWO_HOURS_MS = 2 * 60 * 60 * 1000; // 2 Hours Auto-Lock
+                const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
                 let isAccepted = (m.status === 'accepted');
                 
                 if (isAccepted && m.acceptedAt && (Date.now() - m.acceptedAt > TWO_HOURS_MS)) {
-                    isAccepted = false; // Auto-locks after 2 hours
+                    isAccepted = false;
                 }
 
-                const rawPhone = (providerObj && providerObj.phone) ? providerObj.phone : "";
-                const displayPhone = (isAccepted && rawPhone) ? rawPhone : "Hidden until accepted";
+                // Provider phone and Customer phone handling
+                const providerPhone = (providerObj && providerObj.phone) ? providerObj.phone : "";
+                const displayProviderPhone = (isAccepted && providerPhone) ? providerPhone : "Hidden until accepted";
+                const displayCustomerPhone = (isAccepted && m.customerPhone) ? m.customerPhone : "Hidden until accepted";
                 const displayAddress = (isAccepted && m.address) ? m.address : "Hidden until accepted";
 
                 let statusBadge = `<span class="bg-amber-200 text-amber-900 text-[10px] font-bold px-2.5 py-1 rounded-full">Pending</span>`;
@@ -1081,15 +1088,17 @@
                     <div class="space-y-1.5 mb-3 text-xs font-semibold text-slate-700">
                         <p class="flex items-center"><i class="fa-regular fa-calendar text-emerald-600 w-5 text-sm"></i> Date: <span class="ml-1 font-bold text-slate-900">${m.date}</span></p>
                         <p class="flex items-center"><i class="fa-regular fa-clock text-emerald-600 w-5 text-sm"></i> Time: <span class="ml-1 font-bold text-slate-900">${m.time}</span></p>
+                        <p class="flex items-center"><i class="fa-solid fa-phone text-emerald-600 w-5 text-sm"></i> Cust. Phone: <span class="ml-1 font-bold text-slate-900">${displayCustomerPhone}</span></p>
                         <p class="flex items-center"><i class="fa-solid fa-location-dot text-emerald-600 w-5 text-sm"></i> Address: <span class="ml-1 font-bold text-slate-900">${displayAddress}</span></p>
                         <p class="flex items-start mt-1"><i class="fa-regular fa-note-sticky text-emerald-600 w-5 text-sm mt-0.5"></i> Note: <span class="ml-1 font-medium text-slate-800">${m.note || 'None'}</span></p>
                     </div>
 
                     ${isAccepted ? `
-                        <div class="bg-emerald-100/70 border border-emerald-300 rounded-xl p-2.5 text-center mt-2">
+                        <div class="bg-emerald-100/70 border border-emerald-300 rounded-xl p-2.5 text-center mt-2 space-y-1">
                             <p class="text-[11px] font-bold text-emerald-900 mb-1"><i class="fa-solid fa-phone mr-1"></i> Unlocked Contact & Address (Auto-locks in 2 hrs):</p>
-                            <a href="tel:${displayPhone}" class="text-xs font-extrabold text-emerald-700 underline block mb-1">Phone: ${displayPhone}</a>
-                            <span class="text-xs font-bold text-slate-800">Address: ${displayAddress}</span>
+                            <p class="text-xs font-bold text-slate-800">Provider Phone: <a href="tel:${displayProviderPhone}" class="text-emerald-700 underline font-extrabold">${displayProviderPhone}</a></p>
+                            <p class="text-xs font-bold text-slate-800">Customer Phone: <a href="tel:${displayCustomerPhone}" class="text-emerald-700 underline font-extrabold">${displayCustomerPhone}</a></p>
+                            <p class="text-xs font-bold text-slate-800">Address: ${displayAddress}</p>
                         </div>
                     ` : `
                         <div class="bg-slate-100 border border-slate-200 rounded-xl p-2 text-center text-[11px] text-slate-500 font-medium">
