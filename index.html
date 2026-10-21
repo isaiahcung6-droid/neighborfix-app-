@@ -121,6 +121,7 @@
         </button>
         <button onclick="openNotificationModal()" class="flex flex-col items-center text-slate-400 hover:text-slate-600 relative cursor-pointer">
             <i class="fa-solid fa-bell text-lg"></i>
+            <span id="notifBadge" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
             <span class="text-[10px] font-medium mt-1" data-i18n="nav_alerts">Alerts</span>
         </button>
     </nav>
@@ -222,7 +223,7 @@
         </div>
     </div>
 
-    <!-- Review & Rating Modal (New Feature 3) -->
+    <!-- Review & Rating Modal -->
     <div id="reviewModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl text-center">
             <h3 class="font-bold text-slate-900 text-base mb-1" data-i18n="review_modal_title">Rate & Review Provider</h3>
@@ -289,15 +290,38 @@
                 <button onclick="closeChat()" class="text-slate-400 hover:text-slate-600 text-lg px-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
-            <!-- Provider Thread Switcher (Visible only to the Provider) -->
+            <!-- Provider Thread Switcher -->
             <div id="providerThreadSelectorContainer" class="bg-amber-50 border border-amber-200 rounded-xl p-2 mb-2 hidden flex items-center justify-between text-xs">
                 <span class="font-bold text-amber-900" data-i18n="customer_thread"><i class="fa-solid fa-users mr-1"></i> Customer Thread:</span>
                 <select id="providerThreadSelect" onchange="switchProviderThread(this.value)" class="bg-white border border-amber-300 rounded-lg px-2 py-1 text-xs font-semibold focus:outline-none"></select>
             </div>
 
-            <!-- Booking Drawer with Address & Phone Number Input -->
+            <!-- Booking Drawer with Service Category/Option Dropdown -->
             <div id="bookingDrawer" class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 mb-3 hidden">
-                <h4 class="font-bold text-emerald-900 text-xs mb-2 flex items-center" data-i18n="booking_drawer_title"><i class="fa-regular fa-calendar-check text-emerald-600 mr-1.5"></i> Select Booking Date, Time, Phone & Address</h4>
+                <h4 class="font-bold text-emerald-900 text-xs mb-2 flex items-center" data-i18n="booking_drawer_title"><i class="fa-regular fa-calendar-check text-emerald-600 mr-1.5"></i> Select Service, Date, Time, Phone & Address</h4>
+                
+                <!-- Service Option Category Select Dropdown -->
+                <div class="mb-2">
+                    <label class="block text-[10px] font-semibold text-emerald-800 mb-1" data-i18n="booking_service_option">Service Option / Category</label>
+                    <select id="bookingServiceOptionInput" class="w-full bg-white border border-emerald-200 rounded-xl p-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <option value="General Service Request" data-i18n="opt_general">General Service Request</option>
+                        <option value="Sound Engineering" data-i18n="cat_sound">Sound & Live Stream</option>
+                        <option value="Video & Photography" data-i18n="cat_media">Video & Photography</option>
+                        <option value="Music Classes" data-i18n="cat_music_class">Music Classes</option>
+                        <option value="Electrical & A/C" data-i18n="cat_hvac">Electrical, Heating & A/C</option>
+                        <option value="Roofing & Painting" data-i18n="cat_roofing">Roofing & Painting</option>
+                        <option value="Home Security" data-i18n="cat_security">Home Security</option>
+                        <option value="Plumbing" data-i18n="cat_plumbing">Plumbing</option>
+                        <option value="Appliance Repair" data-i18n="cat_appliance">Appliance Repair</option>
+                        <option value="Handyman" data-i18n="cat_handyman">Handyman</option>
+                        <option value="Home Cleaning" data-i18n="cat_cleaning">Home Cleaning</option>
+                        <option value="Lawn & Yard" data-i18n="cat_lawn">Lawn & Yard</option>
+                        <option value="Towing Service" data-i18n="cat_towing">Towing Service</option>
+                        <option value="Locksmith" data-i18n="cat_locksmith">Locksmith</option>
+                        <option value="Moving & Hauling" data-i18n="cat_moving">Moving & Hauling</option>
+                    </select>
+                </div>
+
                 <div class="grid grid-cols-2 gap-2 mb-2">
                     <div>
                         <label class="block text-[10px] font-semibold text-emerald-800 mb-1" data-i18n="booking_date">Date</label>
@@ -428,7 +452,7 @@
             }
         } catch (e) {}
 
-        // App ထွက်ပြီး ပြန်ဝင်ချိန်တိုင်း Main Home ကို English အဖြစ် အမြဲစတင်စေရန်
+        // App ပြန်ပွင့်တိုင်း Main Home ကို English အဖြစ် စတင်စေရန်
         let currentLang = 'en';
         localStorage.removeItem('nf_app_lang');
         const langSwitchEl = document.getElementById('langSwitch');
@@ -448,7 +472,6 @@
         const pNameInput = document.getElementById('pName');
         if (pNameInput) pNameInput.value = loggedInProviderName;
 
-        // Firebase Push Notification Setup (New Feature 2)
         window.requestNotificationPermission = function() {
             if (!messaging) {
                 alert("Push Notifications activated!");
@@ -602,6 +625,12 @@
         window.handleNotificationClick = function(chatId, providerName) {
             closeNotificationModal();
             if (providerName) {
+                // Provider အမည် တူညီစေရန် Auto Set ပြုလုပ်ပေးခြင်း
+                loggedInProviderName = providerName;
+                localStorage.setItem('nf_logged_provider', providerName);
+                const pInput = document.getElementById('pName');
+                if (pInput) pInput.value = providerName;
+
                 openChat(providerName);
                 if (chatId) {
                     currentChatId = chatId;
@@ -640,7 +669,6 @@
             }
         };
 
-        // Auto GPS Address Detect via Reverse Geocoding (New Feature 1)
         window.getUserLocation = function() {
             const gpsText = document.getElementById('gpsText');
             if (navigator.geolocation) {
@@ -908,14 +936,8 @@
             }
         };
 
-        // Rating and Reviews Functions (New Feature 3)
-        window.openReviewModal = function() {
-            document.getElementById('reviewModal').classList.remove('hidden');
-        };
-
-        window.closeReviewModal = function() {
-            document.getElementById('reviewModal').classList.add('hidden');
-        };
+        window.openReviewModal = function() { document.getElementById('reviewModal').classList.remove('hidden'); };
+        window.closeReviewModal = function() { document.getElementById('reviewModal').classList.add('hidden'); };
 
         window.selectStarRating = function(stars) {
             selectedStar = stars;
@@ -979,6 +1001,8 @@
 
             const providerKey = name.replace(/\s+/g, '_').toLowerCase();
             const currentUser = (loggedInProviderName || "").trim().toLowerCase();
+            
+            // Provider ဟုတ်မဟုတ် စစ်ဆေးခြင်း
             const isProviderSelf = currentUser && (currentUser === name.trim().toLowerCase());
 
             const threadContainer = document.getElementById('providerThreadSelectorContainer');
@@ -1070,6 +1094,7 @@
         };
 
         window.sendBookingRequest = function() {
+            const serviceOptVal = document.getElementById('bookingServiceOptionInput').value;
             const dateVal = document.getElementById('bookingDateInput').value;
             const timeVal = document.getElementById('bookingTimeInput').value;
             const phoneVal = document.getElementById('bookingPhoneInput').value.trim();
@@ -1087,6 +1112,7 @@
                 sender: 'user',
                 senderName: loggedInProviderName,
                 type: 'booking_request',
+                serviceOption: serviceOptVal,
                 date: dateVal,
                 time: timeVal,
                 customerPhone: phoneVal,
@@ -1103,7 +1129,7 @@
             document.getElementById('bookingNoteInput').value = '';
             document.getElementById('bookingDrawer').classList.add('hidden');
             
-            addCloudNotification(currentChatProvider, `📅 New Job Request for ${dateVal}!`, currentChatId);
+            addCloudNotification(currentChatProvider, `📅 New Job Request (${serviceOptVal}) for ${dateVal}!`, currentChatId);
             alert("Booking request sent!");
         };
 
@@ -1234,6 +1260,7 @@
                 const displayProviderPhone = (isAccepted && providerPhone) ? providerPhone : "Hidden until accepted";
                 const displayCustomerPhone = (isAccepted && m.customerPhone) ? m.customerPhone : "Hidden until accepted";
                 const displayAddress = (isAccepted && m.address) ? m.address : "Hidden until accepted";
+                const displayServiceOption = m.serviceOption || "General Service Request";
 
                 let statusBadge = `<span class="bg-amber-200 text-amber-900 text-[10px] font-bold px-2.5 py-1 rounded-full">Pending</span>`;
                 if (isAccepted) statusBadge = `<span class="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full"><i class="fa-solid fa-circle-check mr-1"></i> Confirmed (2h Auto-Lock)</span>`;
@@ -1245,6 +1272,7 @@
                         ${statusBadge}
                     </div>
                     <div class="space-y-1.5 mb-3 text-xs font-semibold text-slate-700">
+                        <p class="flex items-center text-emerald-800 font-bold"><i class="fa-solid fa-layer-group text-emerald-600 w-5 text-sm"></i> Service: <span class="ml-1 font-bold text-slate-900">${displayServiceOption}</span></p>
                         <p class="flex items-center"><i class="fa-regular fa-calendar text-emerald-600 w-5 text-sm"></i> Date: <span class="ml-1 font-bold text-slate-900">${m.date}</span></p>
                         <p class="flex items-center"><i class="fa-regular fa-clock text-emerald-600 w-5 text-sm"></i> Time: <span class="ml-1 font-bold text-slate-900">${m.time}</span></p>
                         <p class="flex items-center"><i class="fa-solid fa-phone text-emerald-600 w-5 text-sm"></i> Cust. Phone: <span class="ml-1 font-bold text-slate-900">${displayCustomerPhone}</span></p>
@@ -1318,7 +1346,7 @@
                 form_main_title: "Post Your Service Listing", form_name: "Your Name / Business Name", form_name_placeholder: "e.g. Rising Star Music Studio", form_pin: "Owner Secret PIN Code (Required to Edit)", form_pin_placeholder: "Enter 4-6 digit secret PIN", form_pin_desc: "Save this PIN! Only devices with this PIN can update or edit your listing.", form_photo: "Upload Profile Photo", form_select_photo: "Select photo from device", form_category: "Category", form_location: "City, State / Country", form_title: "Service Title", form_rate: "Rate", form_rate_placeholder: "Contact for rate", form_phone: "Phone / WhatsApp (Secured)", form_gps: "GPS Location Pin", form_gps_btn: "Use My Current GPS Location", form_desc: "Short Description", form_publish: "Publish Listing",
                 pin_modal_title: "Enter Owner PIN Code", pin_modal_desc: "To edit this listing, please enter the secret PIN code created by the owner.", pin_modal_placeholder: "Enter PIN code", btn_cancel: "Cancel", btn_verify: "Verify & Edit",
                 map_modal_title: "Provider Location", get_direction: "Get Directions in Google Maps",
-                chat_modal_title: "Chat & Inquire", customer_thread: "Customer Thread:", booking_drawer_title: "Select Booking Date, Time, Phone & Address", booking_date: "Date", booking_time: "Time", booking_phone: "Customer Phone Number", booking_phone_placeholder: "e.g. +1 317-123-4567", booking_address: "Customer Address / Location", booking_address_placeholder: "e.g. 123 Main St, Greenwood, IN", booking_note: "Optional Note / Job Details", booking_note_placeholder: "e.g. Need help urgently this afternoon...", submit_booking: "Submit Booking Request", chat_input_placeholder: "Type a message to inquire...", request_booking_btn: "Request Service Booking",
+                chat_modal_title: "Chat & Inquire", customer_thread: "Customer Thread:", booking_drawer_title: "Select Service, Date, Time, Phone & Address", booking_service_option: "Service Option / Category", opt_general: "General Service Request", booking_date: "Date", booking_time: "Time", booking_phone: "Customer Phone Number", booking_phone_placeholder: "e.g. +1 317-123-4567", booking_address: "Customer Address / Location", booking_address_placeholder: "e.g. 123 Main St, Greenwood, IN", booking_note: "Optional Note / Job Details", booking_note_placeholder: "e.g. Need help urgently this afternoon...", submit_booking: "Submit Booking Request", chat_input_placeholder: "Type a message to inquire...", request_booking_btn: "Request Service Booking",
                 fee_modal_title: "Confirm Booking & Pay Fee", fee_modal_desc: "Accepting this booking requires a System Lead Fee.", btn_confirm_accept: "Confirm & Accept", alerts_title: "Alerts & Notifications",
                 review_modal_title: "Rate & Review Provider", review_modal_desc: "Share your experience to help others", review_placeholder: "Write a short review...", btn_submit_review: "Submit Review", rate_service: "Rate"
             },
@@ -1331,15 +1359,15 @@
                 form_main_title: "သင့်ဝန်ဆောင်မှုကို တင်ပါ", form_name: "သင့်အမည် / လုပ်ငန်းအမည်", form_name_placeholder: "ဥပမာ - Rising Star Music Studio", form_pin: "ပိုင်ရှင်၏ လျှို့ဝှက် PIN နံပါတ် (ပြင်ဆင်ရန် လိုအပ်သည်)", form_pin_placeholder: "ဂဏန်း ၄-၆ လုံး ထည့်ပါ", form_pin_desc: "ဤ PIN ကို သိမ်းထားပါ။ ဤကိရိယာမှသာလျှင် သင့်စာရင်းကို ပြင်ဆင်နိုင်မည်။", form_photo: "ပရိုဖိုင်ဓာတ်ပုံ တင်ရန်", form_select_photo: "စက်ပစ္စည်းမှ ပုံရွေးချယ်ပါ", form_category: "အမျိုးအစား", form_location: "မြို့၊ ပြည်နယ် / နိုင်ငံ", form_title: "ဝန်ဆောင်မှု ခေါင်းစဉ်", form_rate: "နှုန်းထား", form_rate_placeholder: "နှုန်းထားအတွက် ဆက်သွယ်ပါ", form_phone: "ဖုန်းနံပါတ် / WhatsApp", form_gps: "GPS တည်နေရာ", form_gps_btn: "ကျွန်ုပ်၏ လက်ရှိ GPS တည်နေရာကို သုံးရန်", form_desc: "အကျဉ်းချုပ် ဖော်ပြချက်", form_publish: "စာရင်းတင်မည်",
                 pin_modal_title: "ပိုင်ရှင် PIN နံပါတ် ထည့်ပါ", pin_modal_desc: "ဤစာရင်းကို ပြင်ဆင်ရန် ဖန်တီးခဲ့သော လျှို့ဝှက် PIN နံပါတ်ကို ထည့်ပါ။", pin_modal_placeholder: "PIN နံပါတ် ထည့်ရန်", btn_cancel: "မလုပ်တော့ပါ", btn_verify: "စစ်ဆေးပြီး ပြင်ဆင်မည်",
                 map_modal_title: "ဝန်ဆောင်မှုပေးသူ၏ တည်နေရာ", get_direction: "Google Maps ဖြင့် လမ်းညွှန်ချက်ရယူရန်",
-                chat_modal_title: "စကားပြောရန်နှင့် စုံစမ်းရန်", customer_thread: "ဖောက်သည်များ၏ စကားပြောခန်း:", booking_drawer_title: "ရက်စွဲ၊ အချိန်၊ ဖုန်းနှင့် လိပ်စာ ရွေးချယ်ပါ", booking_date: "ရက်စွဲ", booking_time: "အချိန်", booking_phone: "ဖောက်သည်၏ ဖုန်းနံပါတ်", booking_phone_placeholder: "ဥပမာ - +1 317-123-4567", booking_address: "ဖောက်သည်၏ လိပ်စာ / တည်နေရာ", booking_address_placeholder: "ဥပမာ - 123 Main St, Greenwood, IN", booking_note: "အထူးမှတ်စု / အသေးစိတ် (ရှိပါက)", booking_note_placeholder: "ဥပမာ - ဒီနေ့မွန်းလွဲပိုင်း အမြန်အလိုရှိသည်...", submit_booking: "ကြိုတင်မှာယူမှု တင်သွင်းရန်", chat_input_placeholder: "စုံစမ်းရန် စာတိုရိုက်ထည့်ပါ...", request_booking_btn: "ဝန်ဆောင်မှု ကြိုတင်မှာယူရန်",
+                chat_modal_title: "စကားပြောရန်နှင့် စုံစမ်းရန်", customer_thread: "ဖောက်သည်များ၏ စကားပြောခန်း:", booking_drawer_title: "ဝန်ဆောင်မှု၊ ရက်စွဲ၊ အချိန်၊ ဖုန်းနှင့် လိပ်စာ ရွေးချယ်ပါ", booking_service_option: "ဝန်ဆောင်မှု အမျိုးအစား ရွေးပါ", opt_general: "အထွေထွေ ဝန်ဆောင်မှု မေတ္တာရပ်ခံချက်", booking_date: "ရက်စွဲ", booking_time: "အချိန်", booking_phone: "ဖောက်သည်၏ ဖုန်းနံပါတ်", booking_phone_placeholder: "ဥပမာ - +1 317-123-4567", booking_address: "ဖောက်သည်၏ လိပ်စာ / တည်နေရာ", booking_address_placeholder: "ဥပမာ - 123 Main St, Greenwood, IN", booking_note: "အထူးမှတ်စု / အသေးစိတ် (ရှိပါက)", booking_note_placeholder: "ဥပမာ - ဒီနေ့မွန်းလွဲပိုင်း အမြန်အလိုရှိသည်...", submit_booking: "ကြိုတင်မှာယူမှု တင်သွင်းရန်", chat_input_placeholder: "စုံစမ်းရန် စာတိုရိုက်ထည့်ပါ...", request_booking_btn: "ဝန်ဆောင်မှု ကြိုတင်မှာယူရန်",
                 fee_modal_title: "အတည်ပြုပြီး အခကြေးငွေ ပေးချေရန်", fee_modal_desc: "ဤမှာယူမှုကို လက်ခံရန် စနစ်ဝန်ဆောင်ခ လိုအပ်ပါသည်။", btn_confirm_accept: "အတည်ပြုပြီး လက်ခံမည်", alerts_title: "သတိပေးချက်များနှင့် အသိပေးချက်များ",
                 review_modal_title: "အဆင့်သတ်မှတ်ချက်နှင့် သုံးသပ်ချက်ပေးရန်", review_modal_desc: "အခြားသူများကို ကူညီရန် သင့်အတွေ့အကြုံကို မျှဝေပါ", review_placeholder: "သုံးသပ်ချက် အတိုချုပ် ရေးပါ...", btn_submit_review: "ပေးပို့မည်", rate_service: "အဆင့်ပေးရန်"
             },
             es: { 
-                subtitle: "Mercado de Servicios Locales", search_placeholder: "Buscar...", cat_all: "Todos", cat_media: "Video y Fotografía", cat_music_class: "Clases de Música", cat_sound: "Sonido", cat_hvac: "Electricidad", cat_roofing: "Techado", cat_security: "Seguridad", cat_plumbing: "Fontanería", cat_appliance: "Electrodomésticos", cat_handyman: "Manitas", cat_cleaning: "Limpieza", cat_lawn: "Jardinería", cat_towing: "Grúa", cat_locksmith: "Cerrajería", cat_moving: "Mudanzas", verified_title: "Proveedores Verificados", direct_chat: "Chatear", nav_home: "Inicio", nav_alerts: "Alertas", clear_alerts: "Borrar", gps_ready: "GPS Listo", refresh_gps: "Actualizar GPS", powered_by: "Desarrollado por", card_lock_notice: "Contacto bloqueado", edit_profile: "Editar Perfil", form_main_title: "Publicar Servicio", form_name: "Nombre", form_name_placeholder: "ej. Studio", form_pin: "PIN", form_pin_placeholder: "PIN", form_pin_desc: "Guarde este PIN", form_photo: "Foto", form_select_photo: "Seleccionar", form_category: "Categoría", form_location: "Ubicación", form_title: "Título", form_rate: "Tarifa", form_rate_placeholder: "Tarifa", form_phone: "Teléfono", form_gps: "GPS", form_gps_btn: "Usar GPS", form_desc: "Descripción", form_publish: "Publicar", pin_modal_title: "PIN", pin_modal_desc: "Ingrese PIN", pin_modal_placeholder: "PIN", btn_cancel: "Cancelar", btn_verify: "Verificar", map_modal_title: "Ubicación", get_direction: "Direcciones", chat_modal_title: "Chat", customer_thread: "Cliente:", booking_drawer_title: "Reservar", booking_date: "Fecha", booking_time: "Hora", booking_phone: "Teléfono", booking_phone_placeholder: "Teléfono", booking_address: "Dirección", booking_address_placeholder: "Dirección", booking_note: "Nota", booking_note_placeholder: "Nota", submit_booking: "Enviar", chat_input_placeholder: "Mensaje...", request_booking_btn: "Reservar", fee_modal_title: "Confirmar", fee_modal_desc: "Requiere tarifa", btn_confirm_accept: "Aceptar", alerts_title: "Alertas", review_modal_title: "Calificar", review_modal_desc: "Escribir reseña", review_placeholder: "Reseña...", btn_submit_review: "Enviar", rate_service: "Calificar"
+                subtitle: "Mercado de Servicios Locales", search_placeholder: "Buscar...", cat_all: "Todos", cat_media: "Video y Fotografía", cat_music_class: "Clases de Música", cat_sound: "Sonido", cat_hvac: "Electricidad", cat_roofing: "Techado", cat_security: "Seguridad", cat_plumbing: "Fontanería", cat_appliance: "Electrodomésticos", cat_handyman: "Manitas", cat_cleaning: "Limpieza", cat_lawn: "Jardinería", cat_towing: "Grúa", cat_locksmith: "Cerrajería", cat_moving: "Mudanzas", verified_title: "Proveedores Verificados", direct_chat: "Chatear", nav_home: "Inicio", nav_alerts: "Alertas", clear_alerts: "Borrar", gps_ready: "GPS Listo", refresh_gps: "Actualizar GPS", powered_by: "Desarrollado por", card_lock_notice: "Contacto bloqueado", edit_profile: "Editar Perfil", form_main_title: "Publicar Servicio", form_name: "Nombre", form_name_placeholder: "ej. Studio", form_pin: "PIN", form_pin_placeholder: "PIN", form_pin_desc: "Guarde este PIN", form_photo: "Foto", form_select_photo: "Seleccionar", form_category: "Categoría", form_location: "Ubicación", form_title: "Título", form_rate: "Tarifa", form_rate_placeholder: "Tarifa", form_phone: "Teléfono", form_gps: "GPS", form_gps_btn: "Usar GPS", form_desc: "Descripción", form_publish: "Publicar", pin_modal_title: "PIN", pin_modal_desc: "Ingrese PIN", pin_modal_placeholder: "PIN", btn_cancel: "Cancelar", btn_verify: "Verificar", map_modal_title: "Ubicación", get_direction: "Direcciones", chat_modal_title: "Chat", customer_thread: "Cliente:", booking_drawer_title: "Reservar", booking_service_option: "Opción de servicio", opt_general: "General", booking_date: "Fecha", booking_time: "Hora", booking_phone: "Teléfono", booking_phone_placeholder: "Teléfono", booking_address: "Dirección", booking_address_placeholder: "Dirección", booking_note: "Nota", booking_note_placeholder: "Nota", submit_booking: "Enviar", chat_input_placeholder: "Mensaje...", request_booking_btn: "Reservar", fee_modal_title: "Confirmar", fee_modal_desc: "Requiere tarifa", btn_confirm_accept: "Aceptar", alerts_title: "Alertas", review_modal_title: "Calificar", review_modal_desc: "Escribir reseña", review_placeholder: "Reseña...", btn_submit_review: "Enviar", rate_service: "Calificar"
             },
             hi: { 
-                subtitle: "स्थानीय सेवा बाज़ार", search_placeholder: "खोजें...", cat_all: "सभी", cat_media: "वीडियो", cat_music_class: "संगीत", cat_sound: "साउंड", cat_hvac: "एसी", cat_roofing: "पेंटिंग", cat_security: "सुरक्षा", cat_plumbing: "प्लंबिंग", cat_appliance: "मरम्मत", cat_handyman: "हैंडीमैन", cat_cleaning: "सफाई", cat_lawn: "लॉन", cat_towing: "टोइंग", cat_locksmith: "ताला", cat_moving: "मूविंग", verified_title: "सत्यापित प्रदाता", direct_chat: "चैट करें", nav_home: "होम", nav_alerts: "अलर्ट", clear_alerts: "साफ़ करें", gps_ready: "GPS तैयार", refresh_gps: "रीफ्रेश", powered_by: "द्वारा संचालित", card_lock_notice: "संपर्क लॉक है", edit_profile: "संपादित करें", form_main_title: "पोस्ट करें", form_name: "नाम", form_name_placeholder: "नाम", form_pin: "पिन", form_pin_placeholder: "पिन", form_pin_desc: "सहेजें", form_photo: "फोटो", form_select_photo: "चुनें", form_category: "श्रेणी", form_location: "स्थान", form_title: "शीर्षक", form_rate: "दर", form_rate_placeholder: "दर", form_phone: "फ़ोन", form_gps: "GPS", form_gps_btn: "GPS का उपयोग करें", form_desc: "विवरण", form_publish: "प्रकाशित करें", pin_modal_title: "पिन", pin_modal_desc: "पिन दर्ज करें", pin_modal_placeholder: "पिन", btn_cancel: "रद्द करें", btn_verify: "सत्यापित करें", map_modal_title: "स्थान", get_direction: "दिशा-निर्देश", chat_modal_title: "चैट", customer_thread: "ग्राहक:", booking_drawer_title: "बुकिंग", booking_date: "दिनांक", booking_time: "समय", booking_phone: "फ़ोन", booking_phone_placeholder: "फ़ोन", booking_address: "पता", booking_address_placeholder: "पता", booking_note: "नोट", booking_note_placeholder: "नोट", submit_booking: "सबमिट करें", chat_input_placeholder: "टाइप करें...", request_booking_btn: "बुकिंग करें", fee_modal_title: "पुष्टि करें", fee_modal_desc: "शुल्क आवश्यक", btn_confirm_accept: "स्वीकार करें", alerts_title: "अलर्ट", review_modal_title: "रेटिंग दें", review_modal_desc: "समीक्षा लिखें", review_placeholder: "समीक्षा...", btn_submit_review: "सबमिट करें", rate_service: "रेटिंग"
+                subtitle: "स्थानीय सेवा बाज़ार", search_placeholder: "खोजें...", cat_all: "सभी", cat_media: "वीडियो", cat_music_class: "संगीत", cat_sound: "साउंड", cat_hvac: "एसी", cat_roofing: "पेंटिंग", cat_security: "सुरक्षा", cat_plumbing: "प्लंबिंग", cat_appliance: "मरम्मत", cat_handyman: "हैंडीमैन", cat_cleaning: "सफाई", cat_lawn: "लॉन", cat_towing: "टोइंग", cat_locksmith: "ताला", cat_moving: "मूविंग", verified_title: "सत्यापित प्रदाता", direct_chat: "चैट करें", nav_home: "होम", nav_alerts: "अलर्ट", clear_alerts: "साफ़ करें", gps_ready: "GPS तैयार", refresh_gps: "रीफ्रेश", powered_by: "द्वारा संचालित", card_lock_notice: "संपर्क लॉक है", edit_profile: "संपादित करें", form_main_title: "पोस्ट करें", form_name: "नाम", form_name_placeholder: "नाम", form_pin: "पिन", form_pin_placeholder: "पिन", form_pin_desc: "सहेजें", form_photo: "फोटो", form_select_photo: "चुनें", form_category: "श्रेणी", form_location: "स्थान", form_title: "शीर्षक", form_rate: "दर", form_rate_placeholder: "दर", form_phone: "फ़ोन", form_gps: "GPS", form_gps_btn: "GPS का उपयोग करें", form_desc: "विवरण", form_publish: "प्रकाशित करें", pin_modal_title: "पिन", pin_modal_desc: "पिन दर्ज करें", pin_modal_placeholder: "पिन", btn_cancel: "रद्द करें", btn_verify: "सत्यापित करें", map_modal_title: "स्थान", get_direction: "दिशा-निर्देश", chat_modal_title: "चैट", customer_thread: "ग्राहक:", booking_drawer_title: "बुकिंग", booking_service_option: "सेवा का विकल्प", opt_general: "सामान्य अनुरोध", booking_date: "दिनांक", booking_time: "समय", booking_phone: "फ़ोन", booking_phone_placeholder: "फ़ोन", booking_address: "पता", booking_address_placeholder: "पता", booking_note: "नोट", booking_note_placeholder: "नोट", submit_booking: "सबमिट करें", chat_input_placeholder: "टाइप करें...", request_booking_btn: "बुकिंग करें", fee_modal_title: "पुष्टि करें", fee_modal_desc: "शुल्क आवश्यक", btn_confirm_accept: "स्वीकार करें", alerts_title: "अलर्ट", review_modal_title: "रेटिंग दें", review_modal_desc: "समीक्षा लिखें", review_placeholder: "समीक्षा...", btn_submit_review: "सबमिट करें", rate_service: "रेटिंग"
             }
         };
 
