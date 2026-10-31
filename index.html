@@ -346,7 +346,7 @@
     <div id="notificationModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-4 shadow-2xl max-h-[80vh] flex flex-col z-50">
             <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
-                <h3 class="font-bold text-slate-900 text-sm flex items-center"><i class="fa-solid fa-bell text-emerald-600 mr-2"></i> <span data-i18n="alerts_title">Alerts & Notifications</span></h3>
+                <h3 class="font-bold text-slate-900 text-sm flex items-center"><i class="fa-solid fa-bell text-emerald-600 mr-2"></i> <span data-i18n="alerts_title">Alerts & Notifications</span> (<span id="notifModeLabel">User</span>)</h3>
                 <button onclick="closeNotificationModal()" class="text-slate-400 hover:text-slate-600 text-lg px-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="notificationList" class="flex-1 overflow-y-auto space-y-2 text-xs py-1"></div>
@@ -380,6 +380,12 @@
         let providerCardElement = null;
         let providerCardMounted = false;
 
+        let customerDeviceId = localStorage.getItem('nf_customer_device_id');
+        if (!customerDeviceId) {
+            customerDeviceId = 'cust_' + Math.random().toString(36).substring(2, 9);
+            localStorage.setItem('nf_customer_device_id', customerDeviceId);
+        }
+
         try {
             if (typeof Stripe !== 'undefined') {
                 stripe = Stripe("pk_live_YOUR_ACTUAL_LIVE_KEY_HERE");
@@ -398,7 +404,8 @@
 
         const ADMIN_LIST = ["isaiah cung", "rising star music studio", "salai"];
         let providers = [];
-        let publicNotifications = {};
+        let providerNotifications = {};
+        let customerNotifications = {};
 
         let loggedInProviderName = localStorage.getItem('nf_logged_provider') || "Rising Star Music Studio";
         const pNameInput = document.getElementById('pName');
@@ -423,18 +430,39 @@
                 filterProviders();
             }, { onlyOnce: false });
 
-            // Global Public Notifications Listener (အမျိုးသားအဆင့် အားလုံးမြင်ရမည့် Public Notification)
-            const publicNotifRef = query(ref(db, 'public_notifications'), limitToLast(25));
-            onValue(publicNotifRef, (snapshot) => {
+            // 1. Provider Notifications Listener
+            const cleanProviderKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
+            const providerNotifRef = query(ref(db, 'notifications_provider/' + cleanProviderKey), limitToLast(20));
+            onValue(providerNotifRef, (snapshot) => {
                 const data = snapshot.val();
-                publicNotifications = data ? data : {};
+                providerNotifications = data ? data : {};
+                updateNotifBadge();
+            }, { onlyOnce: false });
+
+            // 2. Customer Notifications Listener
+            const custNotifRef = query(ref(db, 'notifications_customer/' + customerDeviceId), limitToLast(20));
+            onValue(custNotifRef, (snapshot) => {
+                const data = snapshot.val();
+                customerNotifications = data ? data : {};
                 updateNotifBadge();
             }, { onlyOnce: false });
         }
 
-        function addPublicNotification(text, targetChatId = '', providerName = '') {
-            if (!db) return;
-            push(ref(db, 'public_notifications'), {
+        function notifyProvider(providerName, text, targetChatId = '') {
+            if (!db || !providerName) return;
+            const cleanKey = providerName.replace(/\s+/g, '_').toLowerCase();
+            push(ref(db, 'notifications_provider/' + cleanKey), {
+                text: text,
+                chatId: targetChatId,
+                providerName: providerName,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                timestamp: Date.now()
+            });
+        }
+
+        function notifyCustomer(text, targetChatId = '', providerName = '') {
+            if (!db || !customerDeviceId) return;
+            push(ref(db, 'notifications_customer/' + customerDeviceId), {
                 text: text,
                 chatId: targetChatId,
                 providerName: providerName,
@@ -444,11 +472,20 @@
         }
 
         function updateNotifBadge() {
-            let totalNotifs = Object.keys(publicNotifications).length;
+            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
+            const isProviderSelf = currentUser && currentChatProvider && (currentUser === currentChatProvider.trim().toLowerCase());
+            
+            let totalUnread = 0;
+            if (isProviderSelf) {
+                totalUnread = Object.keys(providerNotifications).length;
+            } else {
+                totalUnread = Object.keys(customerNotifications).length;
+            }
+
             const badge = document.getElementById('notifBadge');
             if (badge) {
-                if (totalNotifs > 0) {
-                    badge.innerText = totalNotifs;
+                if (totalUnread > 0) {
+                    badge.innerText = totalUnread;
                     badge.classList.remove('hidden');
                 } else {
                     badge.classList.add('hidden');
@@ -457,15 +494,20 @@
         }
 
         window.openNotificationModal = function() {
-            renderPublicNotifications();
+            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
+            const isProviderSelf = currentUser && currentChatProvider && (currentUser === currentChatProvider.trim().toLowerCase());
+            
+            document.getElementById('notifModeLabel').innerText = isProviderSelf ? `Provider: ${loggedInProviderName}` : "Customer";
+            renderNotificationsList(isProviderSelf);
             document.getElementById('notificationModal').classList.remove('hidden');
         };
 
-        function renderPublicNotifications() {
+        function renderNotificationsList(isProvider) {
             const listContainer = document.getElementById('notificationList');
             if (!listContainer) return;
 
-            const notifsArray = Object.entries(publicNotifications).map(([id, val]) => ({ id, ...val })).sort((a, b) => b.timestamp - a.timestamp);
+            let activeObj = isProvider ? providerNotifications : customerNotifications;
+            let notifsArray = Object.entries(activeObj).map(([id, val]) => ({ id, ...val })).sort((a, b) => b.timestamp - a.timestamp);
 
             if (notifsArray.length === 0) {
                 listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-6">No incoming alerts found.</p>`;
@@ -495,12 +537,24 @@
 
         window.clearNotifications = function() {
             if (!db) return;
-            set(ref(db, 'public_notifications'), null).then(() => {
-                publicNotifications = {};
-                renderPublicNotifications();
-                updateNotifBadge();
-                alert("All alerts cleared successfully!");
-            });
+            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
+            const isProviderSelf = currentUser && currentChatProvider && (currentUser === currentChatProvider.trim().toLowerCase());
+
+            if (isProviderSelf) {
+                const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
+                set(ref(db, 'notifications_provider/' + cleanKey), null).then(() => {
+                    providerNotifications = {};
+                    renderNotificationsList(true);
+                    updateNotifBadge();
+                });
+            } else {
+                set(ref(db, 'notifications_customer/' + customerDeviceId), null).then(() => {
+                    customerNotifications = {};
+                    renderNotificationsList(false);
+                    updateNotifBadge();
+                });
+            }
+            alert("All alerts cleared successfully!");
         };
 
         window.previewImage = function(event) {
@@ -808,14 +862,12 @@
                     activeChatSession = Math.random().toString(36).substring(2, 8);
                     localStorage.setItem('nf_active_chat_session', activeChatSession);
                 }
-                const deviceId = localStorage.getItem('nf_device_session') || 'cust_' + Math.random().toString(36).substring(2, 7);
-                localStorage.setItem('nf_device_session', deviceId);
-
-                currentChatId = targetChatId || `chat_${providerKey}_${deviceId}_${activeChatSession}`;
+                currentChatId = targetChatId || `chat_${providerKey}_${customerDeviceId}_${activeChatSession}`;
                 loadChatMessages(currentChatId);
             }
 
             document.getElementById('chatModal').classList.remove('hidden');
+            updateNotifBadge();
         };
 
         window.startFreshNewChat = function() {
@@ -896,9 +948,9 @@
 
             input.value = '';
             if (senderType === 'user') {
-                addPublicNotification(`💬 Message to ${currentChatProvider}`, currentChatId, currentChatProvider);
+                notifyProvider(currentChatProvider, `💬 New message from customer`, currentChatId);
             } else {
-                addPublicNotification(`💬 New message from ${currentChatProvider}`, currentChatId, currentChatProvider);
+                notifyCustomer(`💬 New message from ${currentChatProvider}`, currentChatId, currentChatProvider);
             }
         };
 
@@ -937,7 +989,7 @@
             document.getElementById('bookingNoteInput').value = '';
             document.getElementById('bookingDrawer').classList.add('hidden');
             
-            addPublicNotification(`📅 New Job Request for ${dateVal} (${currentChatProvider})!`, currentChatId, currentChatProvider);
+            notifyProvider(currentChatProvider, `📅 New Job Request for ${dateVal}!`, currentChatId);
             alert("Booking request sent successfully!");
         };
 
@@ -959,6 +1011,7 @@
         window.closeChat = function() { 
             if (activeChatRef && db) off(activeChatRef);
             document.getElementById('chatModal').classList.add('hidden'); 
+            updateNotifBadge();
         };
 
         window.initiateBookingAccept = function(msgKey) {
@@ -1008,8 +1061,8 @@
                     acceptedAt: Date.now() 
                 });
                 
-                // Customer ဘက်သို့ Public Notification ပေးပို့ခြင်း (မည်သည့် Device ကမဆို ချက်ချင်းမြင်ရမည်)
-                addPublicNotification(`✅ Booking Accepted by ${currentChatProvider}! Contact unlocked.`, currentChatId, currentChatProvider);
+                // Customer ဘက်သို့ Notification ပေးပို့ခြင်း
+                notifyCustomer(`✅ Booking Accepted by ${currentChatProvider}! Contact & Address unlocked.`, currentChatId, currentChatProvider);
             }
 
             btn.disabled = false;
@@ -1021,7 +1074,7 @@
         window.cancelBookingRequest = function(msgKey) {
             if (db && currentChatId && confirm("Decline this booking?")) {
                 update(ref(db, `chats/${currentChatId}/${msgKey}`), { status: 'cancelled' });
-                addPublicNotification(`❌ Booking Declined by ${currentChatProvider}`, currentChatId, currentChatProvider);
+                notifyCustomer(`❌ Booking Declined by ${currentChatProvider}`, currentChatId, currentChatProvider);
             }
         };
 
