@@ -534,12 +534,7 @@
         window.handleNotificationClick = function(chatId, providerName) {
             closeNotificationModal();
             if (providerName) {
-                openChat(providerName);
-                if (chatId) {
-                    currentChatId = chatId;
-                    if (activeChatRef && db) off(activeChatRef);
-                    loadChatMessages(chatId);
-                }
+                openChat(providerName, chatId);
             }
         };
 
@@ -834,7 +829,7 @@
             } catch(e) {}
         };
 
-        window.openChat = function(name) {
+        window.openChat = function(name, targetChatId = null) {
             currentChatProvider = name;
             document.getElementById('chatTitle').innerText = "Chat & Inquire – " + name;
             const msgBox = document.getElementById('chatMessages');
@@ -855,18 +850,17 @@
             if (isProviderSelf) {
                 threadContainer.classList.remove('hidden');
                 bookingDrawerToggleBtn.classList.add('hidden');
-                loadProviderActiveThreads(providerKey);
+                loadProviderActiveThreads(providerKey, targetChatId);
             } else {
                 threadContainer.classList.add('hidden');
                 bookingDrawerToggleBtn.classList.remove('hidden');
                 
-                // Use a dynamic session identifier suffix to ensure a clean thread
                 let activeChatSession = localStorage.getItem('nf_active_chat_session');
                 if (!activeChatSession) {
                     activeChatSession = Math.random().toString(36).substring(2, 8);
                     localStorage.setItem('nf_active_chat_session', activeChatSession);
                 }
-                currentChatId = `chat_${providerKey}_${deviceSessionId}_${activeChatSession}`;
+                currentChatId = targetChatId || `chat_${providerKey}_${deviceSessionId}_${activeChatSession}`;
                 loadChatMessages(currentChatId);
             }
 
@@ -880,7 +874,7 @@
             alert("Started a fresh new chat session!");
         };
 
-        function loadProviderActiveThreads(providerKey) {
+        function loadProviderActiveThreads(providerKey, targetChatId = null) {
             if (!db) return;
             const chatsRef = ref(db, 'chats');
             onValue(chatsRef, (snapshot) => {
@@ -900,13 +894,21 @@
                     currentChatId = `chat_${providerKey}_default_customer`;
                     loadChatMessages(currentChatId);
                 } else {
+                    matchingThreads.reverse();
+
                     matchingThreads.forEach((th, idx) => {
                         const opt = document.createElement('option');
                         opt.value = th;
-                        opt.innerText = `Thread #${idx + 1}`;
+                        opt.innerText = `Thread #${matchingThreads.length - idx} (${th.split('_').pop()})`;
                         selectEl.appendChild(opt);
                     });
-                    currentChatId = matchingThreads[0];
+
+                    if (targetChatId && matchingThreads.includes(targetChatId)) {
+                        currentChatId = targetChatId;
+                    } else {
+                        currentChatId = matchingThreads[0];
+                    }
+                    
                     selectEl.value = currentChatId;
                     loadChatMessages(currentChatId);
                 }
@@ -1234,9 +1236,9 @@
                 verified_title: "सत्यापित नजदीकी सेवा प्रदाता", direct_chat: "चैट करें और पूछें", nav_home: "होम", nav_alerts: "अलर्ट", clear_alerts: "सभी अलर्ट साफ़ करें",
                 gps_ready: "GPS तैयार है", refresh_gps: "रीफ्रेश GPS", powered_by: "द्वारा संचालित", card_lock_notice: "संपर्क और पता लॉक है", edit_profile: "प्रोफ़ाइल संपादित करें",
                 form_main_title: "अपनी सेवा सूची पोस्ट करें", form_name: "नाम / व्यवसाय का नाम", form_name_placeholder: "उदा. Rising Star Music Studio", form_pin: "पिन कोड", form_pin_placeholder: "पिन दर्ज करें", form_pin_desc: "इस पिन को सहेजें!", form_photo: "प्रोफाइल फोटो अपलोड करें", form_select_photo: "फोटो चुनें", form_category: "श्रेणी", form_location: "शहर, राज्य / देश", form_title: "सेवा शीर्षक", form_rate: "दर", form_rate_placeholder: "दर के लिए संपर्क करें", form_phone: "फ़ोन / व्हाट्सएप", form_gps: "GPS लोकेशन पिन", form_gps_btn: "वर्तमान जीपीएस स्थान का उपयोग करें", form_desc: "संक्षिप्त विवरण", form_publish: "सूची प्रकाशित करें",
-                pin_modal_title: "पिन दर्ज करें", pin_modal_desc: "संपादन के लिए पिन दर्ज करें।", pin_modal_placeholder: "पिन", btn_cancel: "रद्द करें", btn_verify: "सत्यापित करें और संपादित करें",
+                pin_modal_title: "पिन दर्ज करें", pin_modal_desc: "संपादन के लिए पिन दर्ज करें။", pin_modal_placeholder: "पिन", btn_cancel: "रद्द करें", btn_verify: "सत्यापित करें और संपादित करें",
                 map_modal_title: "प्रदाता का स्थान", get_direction: "गूगल मैप्स में दिशा-निर्देश प्राप्त करें",
-                chat_modal_title: "चैट और पूछताछ", customer_thread: "ग्राहक धाག་:", booking_drawer_title: "बुकिंग विवरण चुनें", booking_date: "दिनांक", booking_time: "समय", booking_phone: "फ़ोन नंबर", booking_phone_placeholder: "उदा. +1...", booking_address: "पता", booking_address_placeholder: "पता दर्ज करें", booking_note: "नोट", booking_note_placeholder: "विवरण...", submit_booking: "बुकिंग अनुरोध सबमिट करें", chat_input_placeholder: "संदेश टाइप करें...", request_booking_btn: "सेवा बुकिंग का अनुरोध करें",
+                chat_modal_title: "चैट और पूछताछ", customer_thread: "ग्राहक धागा:", booking_drawer_title: "बुकिंग विवरण चुनें", booking_date: "दिनांक", booking_time: "समय", booking_phone: "फ़ोन नंबर", booking_phone_placeholder: "उदा. +1...", booking_address: "पता", booking_address_placeholder: "पता दर्ज करें", booking_note: "नोट", booking_note_placeholder: "विवरण...", submit_booking: "बुकिंग अनुरोध सबमिट करें", chat_input_placeholder: "संदेश टाइप करें...", request_booking_btn: "सेवा बुकिंग का अनुरोध करें",
                 fee_modal_title: "पुष्टि करें और भुगतान करें", fee_modal_desc: "शुल्क आवश्यक है।", btn_confirm_accept: "पुष्टि करें और स्वीकार करें", alerts_title: "अलर्ट और सूचनाएं"
             }
         };
