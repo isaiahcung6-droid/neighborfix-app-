@@ -945,6 +945,7 @@
 
             if (!db || !currentChatId) return;
 
+            // Generate a fresh unique push key for the new request so it doesn't conflict with old cancelled ones
             const newMsgRef = push(ref(db, 'chats/' + currentChatId));
             set(newMsgRef, {
                 sender: 'user',
