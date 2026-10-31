@@ -346,7 +346,7 @@
     <div id="notificationModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-4 shadow-2xl max-h-[80vh] flex flex-col z-50">
             <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
-                <h3 class="font-bold text-slate-900 text-sm flex items-center"><i class="fa-solid fa-bell text-emerald-600 mr-2"></i> <span data-i18n="alerts_title">Alerts & Notifications</span> (<span id="notifModeLabel">Private</span>)</h3>
+                <h3 class="font-bold text-slate-900 text-sm flex items-center"><i class="fa-solid fa-bell text-emerald-600 mr-2"></i> <span data-i18n="alerts_title">Alerts & Notifications</span></h3>
                 <button onclick="closeNotificationModal()" class="text-slate-400 hover:text-slate-600 text-lg px-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="notificationList" class="flex-1 overflow-y-auto space-y-2 text-xs py-1"></div>
@@ -354,7 +354,7 @@
         </div>
     </div>
 
-    <!-- True Private Notification Engine -->
+    <!-- Clickable Notification Chat Engine -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, query, limitToLast, update, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -380,12 +380,6 @@
         let providerCardElement = null;
         let providerCardMounted = false;
 
-        let clientDeviceUuid = localStorage.getItem('nf_client_device_uuid');
-        if (!clientDeviceUuid) {
-            clientDeviceUuid = 'device_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
-            localStorage.setItem('nf_client_device_uuid', clientDeviceUuid);
-        }
-
         try {
             if (typeof Stripe !== 'undefined') {
                 stripe = Stripe("pk_live_YOUR_ACTUAL_LIVE_KEY_HERE");
@@ -395,8 +389,7 @@
         } catch (e) {}
 
         let currentLang = localStorage.getItem('nf_app_lang') || 'en';
-        const langSwitchEl = document.getElementById('langSwitch');
-        if (langSwitchEl) langSwitchEl.value = currentLang;
+        document.getElementById('langSwitch').value = currentLang;
 
         let currentCategory = 'all';
         let currentChatProvider = '';
@@ -405,8 +398,7 @@
 
         const ADMIN_LIST = ["isaiah cung", "rising star music studio", "salai"];
         let providers = [];
-        let privateNotifications = {};
-        let activeListenerRef = null;
+        let publicNotifications = {};
 
         let loggedInProviderName = localStorage.getItem('nf_logged_provider') || "Rising Star Music Studio";
         const pNameInput = document.getElementById('pName');
@@ -417,7 +409,7 @@
             if (val) {
                 loggedInProviderName = val;
                 localStorage.setItem('nf_logged_provider', val);
-                setupPrivateListener();
+                updateNotifBadge();
                 filterProviders();
             }
         };
@@ -431,40 +423,20 @@
                 filterProviders();
             }, { onlyOnce: false });
 
-            setupPrivateListener();
-        }
-
-        function setupPrivateListener() {
-            if (!db) return;
-            if (activeListenerRef) off(activeListenerRef);
-
-            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
-            const isProvider = currentUser && ADMIN_LIST.includes(currentUser) || loggedInProviderName.length > 0;
-
-            const privatePath = isProvider ? 
-                `private_notifs/provider_${loggedInProviderName.replace(/\s+/g, '_').toLowerCase()}` : 
-                `private_notifs/customer_${clientDeviceUuid}`;
-
-            activeListenerRef = query(ref(db, privatePath), limitToLast(20));
-            onValue(activeListenerRef, (snapshot) => {
+            // Global Public Notifications Listener (အမျိုးသားအဆင့် အားလုံးမြင်ရမည့် Public Notification)
+            const publicNotifRef = query(ref(db, 'public_notifications'), limitToLast(25));
+            onValue(publicNotifRef, (snapshot) => {
                 const data = snapshot.val();
-                privateNotifications = data ? data : {};
+                publicNotifications = data ? data : {};
                 updateNotifBadge();
             }, { onlyOnce: false });
         }
 
-        function sendPrivateNotification(targetType, targetNameOrId, text, chatId = '', providerName = '') {
+        function addPublicNotification(text, targetChatId = '', providerName = '') {
             if (!db) return;
-            let targetPath = '';
-            if (targetType === 'provider') {
-                targetPath = `private_notifs/provider_${targetNameOrId.replace(/\s+/g, '_').toLowerCase()}`;
-            } else {
-                targetPath = `private_notifs/customer_${targetNameOrId}`;
-            }
-
-            push(ref(db, targetPath), {
+            push(ref(db, 'public_notifications'), {
                 text: text,
-                chatId: chatId,
+                chatId: targetChatId,
                 providerName: providerName,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 timestamp: Date.now()
@@ -472,11 +444,11 @@
         }
 
         function updateNotifBadge() {
-            let totalUnread = Object.keys(privateNotifications).length;
+            let totalNotifs = Object.keys(publicNotifications).length;
             const badge = document.getElementById('notifBadge');
             if (badge) {
-                if (totalUnread > 0) {
-                    badge.innerText = totalUnread;
+                if (totalNotifs > 0) {
+                    badge.innerText = totalNotifs;
                     badge.classList.remove('hidden');
                 } else {
                     badge.classList.add('hidden');
@@ -485,26 +457,24 @@
         }
 
         window.openNotificationModal = function() {
-            const labelEl = document.getElementById('notifModeLabel');
-            if (labelEl) labelEl.innerText = `Private Secure Inbox`;
-            renderPrivateNotificationsList();
+            renderPublicNotifications();
             document.getElementById('notificationModal').classList.remove('hidden');
         };
 
-        function renderPrivateNotificationsList() {
+        function renderPublicNotifications() {
             const listContainer = document.getElementById('notificationList');
             if (!listContainer) return;
 
-            let notifsArray = Object.entries(privateNotifications).map(([id, val]) => ({ id, ...val })).sort((a, b) => b.timestamp - a.timestamp);
+            const notifsArray = Object.entries(publicNotifications).map(([id, val]) => ({ id, ...val })).sort((a, b) => b.timestamp - a.timestamp);
 
             if (notifsArray.length === 0) {
-                listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-6">No private alerts found.</p>`;
+                listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-6">No incoming alerts found.</p>`;
             } else {
                 listContainer.innerHTML = notifsArray.map(n => `
-                    <div onclick="handleNotificationClick('${n.chatId || ''}', '${n.providerName || loggedInProviderName}')" class="bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-xl p-3 flex flex-col space-y-1 shadow-sm cursor-pointer transition">
+                    <div onclick="handleNotificationClick('${n.chatId || ''}', '${n.providerName || loggedInProviderName}')" class="bg-amber-50 border border-amber-200 hover:bg-amber-100 rounded-xl p-3 flex flex-col space-y-1 shadow-sm cursor-pointer transition">
                         <p class="text-slate-900 font-bold text-xs flex items-center justify-between">
-                            <span><i class="fa-solid fa-lock text-emerald-600 mr-1"></i> ${n.text}</span>
-                            <i class="fa-solid fa-chevron-right text-[10px] text-emerald-700"></i>
+                            <span><i class="fa-solid fa-bell text-amber-600 mr-1"></i> ${n.text}</span>
+                            <i class="fa-solid fa-chevron-right text-[10px] text-amber-700"></i>
                         </p>
                         <span class="text-[10px] text-slate-500">${n.time}</span>
                     </div>
@@ -525,16 +495,11 @@
 
         window.clearNotifications = function() {
             if (!db) return;
-            const isProvider = loggedInProviderName.length > 0;
-            const privatePath = isProvider ? 
-                `private_notifs/provider_${loggedInProviderName.replace(/\s+/g, '_').toLowerCase()}` : 
-                `private_notifs/customer_${clientDeviceUuid}`;
-
-            set(ref(db, privatePath), null).then(() => {
-                privateNotifications = {};
-                renderPrivateNotificationsList();
+            set(ref(db, 'public_notifications'), null).then(() => {
+                publicNotifications = {};
+                renderPublicNotifications();
                 updateNotifBadge();
-                alert("Private alerts cleared successfully!");
+                alert("All alerts cleared successfully!");
             });
         };
 
@@ -552,7 +517,7 @@
 
         window.getUserLocation = function() {
             const gpsText = document.getElementById('gpsText');
-            if (navigator.geolocation && gpsText) {
+            if (navigator.geolocation) {
                 gpsText.innerText = "Locating...";
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
@@ -587,7 +552,6 @@
 
         function renderProvidersFull(list) {
             const container = document.getElementById('providerList');
-            if (!container) return;
             if (!list || list.length === 0) {
                 container.innerHTML = '<p class="text-xs text-center text-slate-400 py-6">No active providers found.</p>';
                 return;
@@ -654,8 +618,7 @@
         }
 
         window.filterProviders = function() {
-            const searchInputEl = document.getElementById('searchInput');
-            const rawQuery = searchInputEl ? (searchInputEl.value || "").toLowerCase().trim() : "";
+            const rawQuery = (document.getElementById('searchInput').value || "").toLowerCase().trim();
             const cardItems = document.querySelectorAll('.provider-card-item');
             let visibleCount = 0;
 
@@ -671,8 +634,7 @@
                 }
             });
 
-            const countEl = document.getElementById('providerCount');
-            if (countEl) countEl.innerText = `${visibleCount} providers`;
+            document.getElementById('providerCount').innerText = `${visibleCount} providers`;
         };
 
         window.openMapModal = function(name, lat, lng) {
@@ -689,8 +651,7 @@
                 navigator.geolocation.getCurrentPosition((pos) => {
                     document.getElementById('pLat').value = pos.coords.latitude;
                     document.getElementById('pLng').value = pos.coords.longitude;
-                    const btnText = document.getElementById('gpsPostBtnText');
-                    if (btnText) btnText.innerText = "GPS Captured ✓";
+                    document.getElementById('gpsPostBtnText').innerText = "GPS Captured ✓";
                 });
             }
         };
@@ -804,7 +765,6 @@
                 closePostModal();
                 loggedInProviderName = providerName;
                 localStorage.setItem('nf_logged_provider', providerName);
-                setupPrivateListener();
                 alert("Listing successfully saved!");
             } catch(err) {
                 alert("Error saving listing.");
@@ -848,12 +808,14 @@
                     activeChatSession = Math.random().toString(36).substring(2, 8);
                     localStorage.setItem('nf_active_chat_session', activeChatSession);
                 }
-                currentChatId = targetChatId || `chat_${providerKey}_${clientDeviceUuid}_${activeChatSession}`;
+                const deviceId = localStorage.getItem('nf_device_session') || 'cust_' + Math.random().toString(36).substring(2, 7);
+                localStorage.setItem('nf_device_session', deviceId);
+
+                currentChatId = targetChatId || `chat_${providerKey}_${deviceId}_${activeChatSession}`;
                 loadChatMessages(currentChatId);
             }
 
             document.getElementById('chatModal').classList.remove('hidden');
-            updateNotifBadge();
         };
 
         window.startFreshNewChat = function() {
@@ -869,7 +831,6 @@
             onValue(chatsRef, (snapshot) => {
                 const allChats = snapshot.val() || {};
                 const selectEl = document.getElementById('providerThreadSelect');
-                if (!selectEl) return;
                 selectEl.innerHTML = '';
                 
                 let matchingThreads = [];
@@ -889,7 +850,7 @@
                     matchingThreads.forEach((th, idx) => {
                         const opt = document.createElement('option');
                         opt.value = th;
-                        opt.innerText = `Customer Thread #${matchingThreads.length - idx}`;
+                        opt.innerText = `Thread #${matchingThreads.length - idx} (${th.split('_').pop()})`;
                         selectEl.appendChild(opt);
                     });
 
@@ -934,14 +895,10 @@
             });
 
             input.value = '';
-
-            const parts = currentChatId.split('_');
-            const customerUuid = parts.length >= 3 ? parts[2] : clientDeviceUuid;
-
             if (senderType === 'user') {
-                sendPrivateNotification('provider', currentChatProvider, `💬 New message from customer`, currentChatId, currentChatProvider);
+                addPublicNotification(`💬 Message to ${currentChatProvider}`, currentChatId, currentChatProvider);
             } else {
-                sendPrivateNotification('customer', customerUuid, `💬 New message from ${currentChatProvider}`, currentChatId, currentChatProvider);
+                addPublicNotification(`💬 New message from ${currentChatProvider}`, currentChatId, currentChatProvider);
             }
         };
 
@@ -980,7 +937,7 @@
             document.getElementById('bookingNoteInput').value = '';
             document.getElementById('bookingDrawer').classList.add('hidden');
             
-            sendPrivateNotification('provider', currentChatProvider, `📅 New Job Request for ${dateVal}!`, currentChatId, currentChatProvider);
+            addPublicNotification(`📅 New Job Request for ${dateVal} (${currentChatProvider})!`, currentChatId, currentChatProvider);
             alert("Booking request sent successfully!");
         };
 
@@ -990,7 +947,6 @@
             onValue(activeChatRef, (snapshot) => {
                 const data = snapshot.val();
                 const msgBox = document.getElementById('chatMessages');
-                if (!msgBox) return;
                 msgBox.innerHTML = '';
                 if (data) {
                     Object.entries(data).forEach(([key, msg]) => {
@@ -1003,7 +959,6 @@
         window.closeChat = function() { 
             if (activeChatRef && db) off(activeChatRef);
             document.getElementById('chatModal').classList.add('hidden'); 
-            updateNotifBadge();
         };
 
         window.initiateBookingAccept = function(msgKey) {
@@ -1053,10 +1008,8 @@
                     acceptedAt: Date.now() 
                 });
                 
-                const parts = currentChatId.split('_');
-                const customerUuid = parts.length >= 3 ? parts[2] : clientDeviceUuid;
-
-                sendPrivateNotification('customer', customerUuid, `✅ Booking Accepted by ${currentChatProvider}! Contact unlocked.`, currentChatId, currentChatProvider);
+                // Customer ဘက်သို့ Public Notification ပေးပို့ခြင်း (မည်သည့် Device ကမဆို ချက်ချင်းမြင်ရမည်)
+                addPublicNotification(`✅ Booking Accepted by ${currentChatProvider}! Contact unlocked.`, currentChatId, currentChatProvider);
             }
 
             btn.disabled = false;
@@ -1068,16 +1021,12 @@
         window.cancelBookingRequest = function(msgKey) {
             if (db && currentChatId && confirm("Decline this booking?")) {
                 update(ref(db, `chats/${currentChatId}/${msgKey}`), { status: 'cancelled' });
-                
-                const parts = currentChatId.split('_');
-                const customerUuid = parts.length >= 3 ? parts[2] : clientDeviceUuid;
-                sendPrivateNotification('customer', customerUuid, `❌ Booking Declined by ${currentChatProvider}`, currentChatId, currentChatProvider);
+                addPublicNotification(`❌ Booking Declined by ${currentChatProvider}`, currentChatId, currentChatProvider);
             }
         };
 
         function appendMessageToUI(m, msgKey) {
             const msgBox = document.getElementById('chatMessages');
-            if (!msgBox) return;
             const wrapperDiv = document.createElement('div');
             wrapperDiv.className = "flex flex-col my-1.5";
 
