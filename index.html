@@ -116,7 +116,7 @@
         </button>
         <button onclick="openNotificationModal()" class="flex flex-col items-center text-slate-400 hover:text-slate-600 relative cursor-pointer">
             <i class="fa-solid fa-bell text-lg"></i>
-            <span id="notifBadge" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
+            <span class="text-[10px] font-medium mt-1" data-i18n="nav_alerts">Alerts</span>
         </button>
     </nav>
 
@@ -346,7 +346,7 @@
     <div id="notificationModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-4 shadow-2xl max-h-[80vh] flex flex-col z-50">
             <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
-                <h3 class="font-bold text-slate-900 text-sm flex items-center"><i class="fa-solid fa-bell text-emerald-600 mr-2"></i> <span data-i18n="alerts_title">Alerts & Notifications</span></h3>
+                <h3 class="font-bold text-slate-900 text-sm flex items-center"><i class="fa-solid fa-bell text-emerald-600 mr-2"></i> <span data-i18n="alerts_title">Alerts & Notifications</span> (<span id="activeProviderNotifLabel">User</span>)</h3>
                 <button onclick="closeNotificationModal()" class="text-slate-400 hover:text-slate-600 text-lg px-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="notificationList" class="flex-1 overflow-y-auto space-y-2 text-xs py-1"></div>
@@ -380,6 +380,12 @@
         let providerCardElement = null;
         let providerCardMounted = false;
 
+        let deviceSessionId = localStorage.getItem('nf_device_session');
+        if (!deviceSessionId) {
+            deviceSessionId = 'cust_' + Math.random().toString(36).substring(2, 9);
+            localStorage.setItem('nf_device_session', deviceSessionId);
+        }
+
         try {
             if (typeof Stripe !== 'undefined') {
                 stripe = Stripe("pk_live_YOUR_ACTUAL_LIVE_KEY_HERE");
@@ -398,7 +404,8 @@
 
         const ADMIN_LIST = ["isaiah cung", "rising star music studio", "salai"];
         let providers = [];
-        let publicNotifications = {};
+        let cloudNotifications = {};
+        let customerNotifications = {};
 
         let loggedInProviderName = localStorage.getItem('nf_logged_provider') || "Rising Star Music Studio";
         const pNameInput = document.getElementById('pName');
@@ -423,32 +430,68 @@
                 filterProviders();
             }, { onlyOnce: false });
 
-            // Global Public Notifications Listener (အမျိုးသားအဆင့် အားလုံးမြင်ရမည့် Public Notification)
-            const publicNotifRef = query(ref(db, 'public_notifications'), limitToLast(25));
-            onValue(publicNotifRef, (snapshot) => {
+            const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
+            const cloudNotifRef = query(ref(db, 'notifications/' + cleanKey), limitToLast(15));
+            onValue(cloudNotifRef, (snapshot) => {
                 const data = snapshot.val();
-                publicNotifications = data ? data : {};
+                cloudNotifications[cleanKey] = data ? data : {};
+                updateNotifBadge();
+            }, { onlyOnce: false });
+
+            const custNotifRef = query(ref(db, 'customer_notifications/' + deviceSessionId), limitToLast(15));
+            onValue(custNotifRef, (snapshot) => {
+                const data = snapshot.val();
+                customerNotifications[deviceSessionId] = data ? data : {};
                 updateNotifBadge();
             }, { onlyOnce: false });
         }
 
-        function addPublicNotification(text, targetChatId = '', providerName = '') {
-            if (!db) return;
-            push(ref(db, 'public_notifications'), {
+        function addCloudNotification(providerName, text, targetChatId = '') {
+            if (!db || !providerName) return;
+            const cleanProviderKey = providerName.replace(/\s+/g, '_').toLowerCase();
+            push(ref(db, 'notifications/' + cleanProviderKey), {
                 text: text,
                 chatId: targetChatId,
                 providerName: providerName,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                unread: true
+            });
+        }
+
+        function addCustomerNotification(customerSessionId, text, targetChatId = '', providerName = '') {
+            if (!db || !customerSessionId) return;
+            push(ref(db, 'customer_notifications/' + customerSessionId), {
+                text: text,
+                chatId: targetChatId,
+                providerName: providerName,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                timestamp: Date.now(),
+                unread: true
             });
         }
 
         function updateNotifBadge() {
-            let totalNotifs = Object.keys(publicNotifications).length;
+            let totalUnread = 0;
+            const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
+            const pNotifs = cloudNotifications[cleanKey];
+            if (pNotifs) {
+                Object.values(pNotifs).forEach(n => {
+                    if (n.unread) totalUnread++;
+                });
+            }
+
+            const cNotifs = customerNotifications[deviceSessionId];
+            if (cNotifs) {
+                Object.values(cNotifs).forEach(n => {
+                    if (n.unread) totalUnread++;
+                });
+            }
+
             const badge = document.getElementById('notifBadge');
             if (badge) {
-                if (totalNotifs > 0) {
-                    badge.innerText = totalNotifs;
+                if (totalUnread > 0) {
+                    badge.innerText = totalUnread;
                     badge.classList.remove('hidden');
                 } else {
                     badge.classList.add('hidden');
@@ -457,15 +500,21 @@
         }
 
         window.openNotificationModal = function() {
-            renderPublicNotifications();
+            document.getElementById('activeProviderNotifLabel').innerText = loggedInProviderName;
+            renderCloudNotifications();
             document.getElementById('notificationModal').classList.remove('hidden');
         };
 
-        function renderPublicNotifications() {
+        function renderCloudNotifications() {
             const listContainer = document.getElementById('notificationList');
             if (!listContainer) return;
 
-            const notifsArray = Object.entries(publicNotifications).map(([id, val]) => ({ id, ...val })).sort((a, b) => b.timestamp - a.timestamp);
+            const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
+            let providerNotifsObj = cloudNotifications[cleanKey] || {};
+            let custNotifsObj = customerNotifications[deviceSessionId] || {};
+
+            let combinedNotifs = { ...providerNotifsObj, ...custNotifsObj };
+            const notifsArray = Object.entries(combinedNotifs).map(([id, val]) => ({ id, ...val })).sort((a, b) => b.timestamp - a.timestamp);
 
             if (notifsArray.length === 0) {
                 listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-6">No incoming alerts found.</p>`;
@@ -495,9 +544,12 @@
 
         window.clearNotifications = function() {
             if (!db) return;
-            set(ref(db, 'public_notifications'), null).then(() => {
-                publicNotifications = {};
-                renderPublicNotifications();
+            const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
+            set(ref(db, 'notifications/' + cleanKey), null);
+            set(ref(db, 'customer_notifications/' + deviceSessionId), null).then(() => {
+                cloudNotifications[cleanKey] = {};
+                customerNotifications[deviceSessionId] = {};
+                renderCloudNotifications();
                 updateNotifBadge();
                 alert("All alerts cleared successfully!");
             });
@@ -808,10 +860,7 @@
                     activeChatSession = Math.random().toString(36).substring(2, 8);
                     localStorage.setItem('nf_active_chat_session', activeChatSession);
                 }
-                const deviceId = localStorage.getItem('nf_device_session') || 'cust_' + Math.random().toString(36).substring(2, 7);
-                localStorage.setItem('nf_device_session', deviceId);
-
-                currentChatId = targetChatId || `chat_${providerKey}_${deviceId}_${activeChatSession}`;
+                currentChatId = targetChatId || `chat_${providerKey}_${deviceSessionId}_${activeChatSession}`;
                 loadChatMessages(currentChatId);
             }
 
@@ -896,9 +945,10 @@
 
             input.value = '';
             if (senderType === 'user') {
-                addPublicNotification(`💬 Message to ${currentChatProvider}`, currentChatId, currentChatProvider);
+                addCloudNotification(currentChatProvider, `💬 New message from customer: "${text}"`, currentChatId);
             } else {
-                addPublicNotification(`💬 New message from ${currentChatProvider}`, currentChatId, currentChatProvider);
+                const custId = currentChatId.split('_')[2] || deviceSessionId;
+                addCustomerNotification(custId, `💬 New message from ${currentChatProvider}`, currentChatId, currentChatProvider);
             }
         };
 
@@ -937,7 +987,7 @@
             document.getElementById('bookingNoteInput').value = '';
             document.getElementById('bookingDrawer').classList.add('hidden');
             
-            addPublicNotification(`📅 New Job Request for ${dateVal} (${currentChatProvider})!`, currentChatId, currentChatProvider);
+            addCloudNotification(currentChatProvider, `📅 New Job Request for ${dateVal}!`, currentChatId);
             alert("Booking request sent successfully!");
         };
 
@@ -1007,9 +1057,11 @@
                     status: 'accepted',
                     acceptedAt: Date.now() 
                 });
-                
-                // Customer ဘက်သို့ Public Notification ပေးပို့ခြင်း (မည်သည့် Device ကမဆို ချက်ချင်းမြင်ရမည်)
-                addPublicNotification(`✅ Booking Accepted by ${currentChatProvider}! Contact unlocked.`, currentChatId, currentChatProvider);
+                addCloudNotification(currentChatProvider, `Booking confirmed and lead unlocked!`, currentChatId);
+
+                // Customer ဘက်သို့ အသိပေးချက် (Notification) ပေးပို့ခြင်း
+                const custId = currentChatId.split('_')[2] || deviceSessionId;
+                addCustomerNotification(custId, `✅ Your booking request has been accepted by ${currentChatProvider}!`, currentChatId, currentChatProvider);
             }
 
             btn.disabled = false;
@@ -1021,7 +1073,6 @@
         window.cancelBookingRequest = function(msgKey) {
             if (db && currentChatId && confirm("Decline this booking?")) {
                 update(ref(db, `chats/${currentChatId}/${msgKey}`), { status: 'cancelled' });
-                addPublicNotification(`❌ Booking Declined by ${currentChatProvider}`, currentChatId, currentChatProvider);
             }
         };
 
@@ -1189,7 +1240,7 @@
                 pin_modal_title: "पिन दर्ज करें", pin_modal_desc: "संपादन के लिए पिन दर्ज करें။", pin_modal_placeholder: "पिन", btn_cancel: "रद्द करें", btn_verify: "सत्यापित करें और संपादित करें",
                 map_modal_title: "प्रदाता का स्थान", get_direction: "गूगल मैप्स में दिशा-निर्देश प्राप्त करें",
                 chat_modal_title: "चैट और पूछताछ", customer_thread: "ग्राहक धागा:", booking_drawer_title: "बुकिंग विवरण चुनें", booking_date: "दिनांक", booking_time: "समय", booking_phone: "फ़ोन नंबर", booking_phone_placeholder: "उदा. +1...", booking_address: "पता", booking_address_placeholder: "पता दर्ज करें", booking_note: "नोट", booking_note_placeholder: "विवरण...", submit_booking: "बुकिंग अनुरोध सबमिट करें", chat_input_placeholder: "संदेश टाइप करें...", request_booking_btn: "सेवा बुकिंग का अनुरोध करें",
-                fee_modal_title: "पुष्टि करें और भुगतान करें", fee_modal_desc: "शुल्क आवश्यक है။", btn_confirm_accept: "पुष्टि करें और स्वीकार करें", alerts_title: "अलर्ट और सूचनाएं"
+                fee_modal_title: "पुष्टि करें और भुगतान करें", fee_modal_desc: "शुल्क आवश्यक है।", btn_confirm_accept: "पुष्टि करें और स्वीकार करें", alerts_title: "अलर्ट और सूचनाएं"
             }
         };
 
