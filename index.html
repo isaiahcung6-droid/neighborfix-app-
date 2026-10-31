@@ -380,7 +380,6 @@
         let providerCardElement = null;
         let providerCardMounted = false;
 
-        // Unique Private Device Session
         let clientDeviceUuid = localStorage.getItem('nf_client_device_uuid');
         if (!clientDeviceUuid) {
             clientDeviceUuid = 'device_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
@@ -396,7 +395,8 @@
         } catch (e) {}
 
         let currentLang = localStorage.getItem('nf_app_lang') || 'en';
-        document.getElementById('langSwitch').value = currentLang;
+        const langSwitchEl = document.getElementById('langSwitch');
+        if (langSwitchEl) langSwitchEl.value = currentLang;
 
         let currentCategory = 'all';
         let currentChatProvider = '';
@@ -441,7 +441,6 @@
             const currentUser = (loggedInProviderName || "").trim().toLowerCase();
             const isProvider = currentUser && ADMIN_LIST.includes(currentUser) || loggedInProviderName.length > 0;
 
-            // True Private Path: Provider ဖြစ်လျှင် မိမိနာမည်အလိုက်၊ Customer ဖြစ်လျှင် မိမိ Device UUID အလိုက် သီးသန့်ခွဲမည်
             const privatePath = isProvider ? 
                 `private_notifs/provider_${loggedInProviderName.replace(/\s+/g, '_').toLowerCase()}` : 
                 `private_notifs/customer_${clientDeviceUuid}`;
@@ -486,8 +485,8 @@
         }
 
         window.openNotificationModal = function() {
-            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
-            document.getElementById('notifModeLabel').innerText = `Private Secure Inbox`;
+            const labelEl = document.getElementById('notifModeLabel');
+            if (labelEl) labelEl.innerText = `Private Secure Inbox`;
             renderPrivateNotificationsList();
             document.getElementById('notificationModal').classList.remove('hidden');
         };
@@ -526,7 +525,6 @@
 
         window.clearNotifications = function() {
             if (!db) return;
-            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
             const isProvider = loggedInProviderName.length > 0;
             const privatePath = isProvider ? 
                 `private_notifs/provider_${loggedInProviderName.replace(/\s+/g, '_').toLowerCase()}` : 
@@ -554,7 +552,7 @@
 
         window.getUserLocation = function() {
             const gpsText = document.getElementById('gpsText');
-            if (navigator.geolocation) {
+            if (navigator.geolocation && gpsText) {
                 gpsText.innerText = "Locating...";
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
@@ -589,6 +587,7 @@
 
         function renderProvidersFull(list) {
             const container = document.getElementById('providerList');
+            if (!container) return;
             if (!list || list.length === 0) {
                 container.innerHTML = '<p class="text-xs text-center text-slate-400 py-6">No active providers found.</p>';
                 return;
@@ -655,7 +654,8 @@
         }
 
         window.filterProviders = function() {
-            const rawQuery = (document.getElementById('searchInput').value || "").toLowerCase().trim();
+            const searchInputEl = document.getElementById('searchInput');
+            const rawQuery = searchInputEl ? (searchInputEl.value || "").toLowerCase().trim() : "";
             const cardItems = document.querySelectorAll('.provider-card-item');
             let visibleCount = 0;
 
@@ -671,7 +671,8 @@
                 }
             });
 
-            document.getElementById('providerCount').innerText = `${visibleCount} providers`;
+            const countEl = document.getElementById('providerCount');
+            if (countEl) countEl.innerText = `${visibleCount} providers`;
         };
 
         window.openMapModal = function(name, lat, lng) {
@@ -688,7 +689,8 @@
                 navigator.geolocation.getCurrentPosition((pos) => {
                     document.getElementById('pLat').value = pos.coords.latitude;
                     document.getElementById('pLng').value = pos.coords.longitude;
-                    document.getElementById('gpsPostBtnText').innerText = "GPS Captured ✓";
+                    const btnText = document.getElementById('gpsPostBtnText');
+                    if (btnText) btnText.innerText = "GPS Captured ✓";
                 });
             }
         };
@@ -846,7 +848,6 @@
                     activeChatSession = Math.random().toString(36).substring(2, 8);
                     localStorage.setItem('nf_active_chat_session', activeChatSession);
                 }
-                // Chat ID ထဲမှာ Customer ၏ clientDeviceUuid ကို ထည့်သွင်းပေးခြင်းဖြင့် Private ဖြစ်စေသည်
                 currentChatId = targetChatId || `chat_${providerKey}_${clientDeviceUuid}_${activeChatSession}`;
                 loadChatMessages(currentChatId);
             }
@@ -868,6 +869,7 @@
             onValue(chatsRef, (snapshot) => {
                 const allChats = snapshot.val() || {};
                 const selectEl = document.getElementById('providerThreadSelect');
+                if (!selectEl) return;
                 selectEl.innerHTML = '';
                 
                 let matchingThreads = [];
@@ -933,15 +935,12 @@
 
             input.value = '';
 
-            // Extract customer UUID from currentChatId (format: chat_provider_customerUuid_session)
             const parts = currentChatId.split('_');
             const customerUuid = parts.length >= 3 ? parts[2] : clientDeviceUuid;
 
             if (senderType === 'user') {
-                // Private notification to Provider only
                 sendPrivateNotification('provider', currentChatProvider, `💬 New message from customer`, currentChatId, currentChatProvider);
             } else {
-                // Private notification to Customer device only
                 sendPrivateNotification('customer', customerUuid, `💬 New message from ${currentChatProvider}`, currentChatId, currentChatProvider);
             }
         };
@@ -981,7 +980,6 @@
             document.getElementById('bookingNoteInput').value = '';
             document.getElementById('bookingDrawer').classList.add('hidden');
             
-            // Send Private Notification exclusively to Provider
             sendPrivateNotification('provider', currentChatProvider, `📅 New Job Request for ${dateVal}!`, currentChatId, currentChatProvider);
             alert("Booking request sent successfully!");
         };
@@ -992,6 +990,7 @@
             onValue(activeChatRef, (snapshot) => {
                 const data = snapshot.val();
                 const msgBox = document.getElementById('chatMessages');
+                if (!msgBox) return;
                 msgBox.innerHTML = '';
                 if (data) {
                     Object.entries(data).forEach(([key, msg]) => {
@@ -1054,11 +1053,9 @@
                     acceptedAt: Date.now() 
                 });
                 
-                // Extract customer UUID to notify strictly that customer
                 const parts = currentChatId.split('_');
                 const customerUuid = parts.length >= 3 ? parts[2] : clientDeviceUuid;
 
-                // Send Private Notification exclusively to Customer device
                 sendPrivateNotification('customer', customerUuid, `✅ Booking Accepted by ${currentChatProvider}! Contact unlocked.`, currentChatId, currentChatProvider);
             }
 
@@ -1080,6 +1077,7 @@
 
         function appendMessageToUI(m, msgKey) {
             const msgBox = document.getElementById('chatMessages');
+            if (!msgBox) return;
             const wrapperDiv = document.createElement('div');
             wrapperDiv.className = "flex flex-col my-1.5";
 
@@ -1240,7 +1238,7 @@
                 gps_ready: "GPS तैयार है", refresh_gps: "रीफ्रेश GPS", powered_by: "द्वारा संचालित", card_lock_notice: "संपर्क और पता लॉक है", edit_profile: "प्रोफ़ाइल संपादित करें",
                 form_main_title: "अपनी सेवा सूची पोस्ट करें", form_name: "नाम / व्यवसाय का नाम", form_name_placeholder: "उदा. Rising Star Music Studio", form_pin: "पिन कोड", form_pin_placeholder: "पिन दर्ज करें", form_pin_desc: "इस पिन को सहेजें!", form_photo: "प्रोफाइल फोटो अपलोड करें", form_select_photo: "फोटो चुनें", form_category: "श्रेणी", form_location: "शहर, राज्य / देश", form_title: "सेवा शीर्षक", form_rate: "दर", form_rate_placeholder: "दर के लिए संपर्क करें", form_phone: "फ़ोन / व्हाट्सएप", form_gps: "GPS लोकेशन पिन", form_gps_btn: "वर्तमान जीपीएस स्थान का उपयोग करें", form_desc: "संक्षिप्त विवरण", form_publish: "सूची प्रकाशित करें",
                 pin_modal_title: "पिन दर्ज करें", pin_modal_desc: "संपादन के लिए पिन दर्ज करें။", pin_modal_placeholder: "पिन", btn_cancel: "रद्द करें", btn_verify: "सत्यापित करें और संपादित करें",
-                map_modal_title: "প্রदाता کا स्थान", get_direction: "गूगल मैप्स में दिशा-निर्देश प्राप्त करें",
+                map_modal_title: "प्रदाता का स्थान", get_direction: "गूगल मैप्स में दिशा-निर्देश प्राप्त करें",
                 chat_modal_title: "चैट और पूछताछ", customer_thread: "ग्राहक धागा:", booking_drawer_title: "बुकिंग विवरण चुनें", booking_date: "दिनांक", booking_time: "समय", booking_phone: "फ़ोन नंबर", booking_phone_placeholder: "उदा. +1...", booking_address: "पता", booking_address_placeholder: "पता दर्ज करें", booking_note: "नोट", booking_note_placeholder: "विवरण...", submit_booking: "बुकिंग अनुरोध सबमिट करें", chat_input_placeholder: "संदेश टाइप करें...", request_booking_btn: "सेवा बुकिंग का अनुरोध करें",
                 fee_modal_title: "पुष्टि करें और भुगतान करें", fee_modal_desc: "शुल्क आवश्यक है။", btn_confirm_accept: "पुष्टि करें और स्वीकार करें", alerts_title: "अलर्ट और सूचनाएं"
             }
@@ -1250,7 +1248,7 @@
             currentLang = translations[lang] ? lang : 'en';
             localStorage.setItem('nf_app_lang', currentLang);
             
-            .langSelect = document.getElementById('langSwitch');
+            const langSelect = document.getElementById('langSwitch');
             if (langSelect && langSelect.value !== currentLang) {
                 langSelect.value = currentLang;
             }
