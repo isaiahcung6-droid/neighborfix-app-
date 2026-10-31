@@ -945,7 +945,8 @@
 
             if (!db || !currentChatId) return;
 
-            push(ref(db, 'chats/' + currentChatId), {
+            const newMsgRef = push(ref(db, 'chats/' + currentChatId));
+            set(newMsgRef, {
                 sender: 'user',
                 senderName: loggedInProviderName,
                 type: 'booking_request',
@@ -966,7 +967,7 @@
             document.getElementById('bookingDrawer').classList.add('hidden');
             
             addCloudNotification(currentChatProvider, `📅 New Job Request for ${dateVal}!`, currentChatId);
-            alert("Booking request sent!");
+            alert("Booking request sent successfully!");
         };
 
         function loadChatMessages(chatId) {
