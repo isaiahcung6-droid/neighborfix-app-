@@ -346,7 +346,7 @@
     <div id="notificationModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-4 shadow-2xl max-h-[80vh] flex flex-col z-50">
             <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
-                <h3 class="font-bold text-slate-900 text-sm flex items-center"><i class="fa-solid fa-bell text-emerald-600 mr-2"></i> <span data-i18n="alerts_title">Alerts & Notifications</span> (<span id="notifModeLabel">User</span>)</h3>
+                <h3 class="font-bold text-slate-900 text-sm flex items-center"><i class="fa-solid fa-bell text-emerald-600 mr-2"></i> <span data-i18n="alerts_title">Alerts & Notifications</span> (<span id="notifModeLabel">Private</span>)</h3>
                 <button onclick="closeNotificationModal()" class="text-slate-400 hover:text-slate-600 text-lg px-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="notificationList" class="flex-1 overflow-y-auto space-y-2 text-xs py-1"></div>
@@ -354,7 +354,7 @@
         </div>
     </div>
 
-    <!-- Clickable Notification Chat Engine -->
+    <!-- True Private Notification Engine -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, query, limitToLast, update, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -380,10 +380,11 @@
         let providerCardElement = null;
         let providerCardMounted = false;
 
-        let customerDeviceId = localStorage.getItem('nf_customer_device_id');
-        if (!customerDeviceId) {
-            customerDeviceId = 'cust_' + Math.random().toString(36).substring(2, 9);
-            localStorage.setItem('nf_customer_device_id', customerDeviceId);
+        // Unique Private Device Session
+        let clientDeviceUuid = localStorage.getItem('nf_client_device_uuid');
+        if (!clientDeviceUuid) {
+            clientDeviceUuid = 'device_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+            localStorage.setItem('nf_client_device_uuid', clientDeviceUuid);
         }
 
         try {
@@ -404,8 +405,8 @@
 
         const ADMIN_LIST = ["isaiah cung", "rising star music studio", "salai"];
         let providers = [];
-        let providerNotifications = {};
-        let customerNotifications = {};
+        let privateNotifications = {};
+        let activeListenerRef = null;
 
         let loggedInProviderName = localStorage.getItem('nf_logged_provider') || "Rising Star Music Studio";
         const pNameInput = document.getElementById('pName');
@@ -416,7 +417,7 @@
             if (val) {
                 loggedInProviderName = val;
                 localStorage.setItem('nf_logged_provider', val);
-                updateNotifBadge();
+                setupPrivateListener();
                 filterProviders();
             }
         };
@@ -430,41 +431,41 @@
                 filterProviders();
             }, { onlyOnce: false });
 
-            // 1. Provider Notifications Listener
-            const cleanProviderKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
-            const providerNotifRef = query(ref(db, 'notifications_provider/' + cleanProviderKey), limitToLast(20));
-            onValue(providerNotifRef, (snapshot) => {
-                const data = snapshot.val();
-                providerNotifications = data ? data : {};
-                updateNotifBadge();
-            }, { onlyOnce: false });
+            setupPrivateListener();
+        }
 
-            // 2. Customer Notifications Listener
-            const custNotifRef = query(ref(db, 'notifications_customer/' + customerDeviceId), limitToLast(20));
-            onValue(custNotifRef, (snapshot) => {
+        function setupPrivateListener() {
+            if (!db) return;
+            if (activeListenerRef) off(activeListenerRef);
+
+            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
+            const isProvider = currentUser && ADMIN_LIST.includes(currentUser) || loggedInProviderName.length > 0;
+
+            // True Private Path: Provider ဖြစ်လျှင် မိမိနာမည်အလိုက်၊ Customer ဖြစ်လျှင် မိမိ Device UUID အလိုက် သီးသန့်ခွဲမည်
+            const privatePath = isProvider ? 
+                `private_notifs/provider_${loggedInProviderName.replace(/\s+/g, '_').toLowerCase()}` : 
+                `private_notifs/customer_${clientDeviceUuid}`;
+
+            activeListenerRef = query(ref(db, privatePath), limitToLast(20));
+            onValue(activeListenerRef, (snapshot) => {
                 const data = snapshot.val();
-                customerNotifications = data ? data : {};
+                privateNotifications = data ? data : {};
                 updateNotifBadge();
             }, { onlyOnce: false });
         }
 
-        function notifyProvider(providerName, text, targetChatId = '') {
-            if (!db || !providerName) return;
-            const cleanKey = providerName.replace(/\s+/g, '_').toLowerCase();
-            push(ref(db, 'notifications_provider/' + cleanKey), {
-                text: text,
-                chatId: targetChatId,
-                providerName: providerName,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                timestamp: Date.now()
-            });
-        }
+        function sendPrivateNotification(targetType, targetNameOrId, text, chatId = '', providerName = '') {
+            if (!db) return;
+            let targetPath = '';
+            if (targetType === 'provider') {
+                targetPath = `private_notifs/provider_${targetNameOrId.replace(/\s+/g, '_').toLowerCase()}`;
+            } else {
+                targetPath = `private_notifs/customer_${targetNameOrId}`;
+            }
 
-        function notifyCustomer(text, targetChatId = '', providerName = '') {
-            if (!db || !customerDeviceId) return;
-            push(ref(db, 'notifications_customer/' + customerDeviceId), {
+            push(ref(db, targetPath), {
                 text: text,
-                chatId: targetChatId,
+                chatId: chatId,
                 providerName: providerName,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 timestamp: Date.now()
@@ -472,16 +473,7 @@
         }
 
         function updateNotifBadge() {
-            const currentUser = (loggedInProviderName || "").trim().toLowerCase();
-            const isProviderSelf = currentUser && currentChatProvider && (currentUser === currentChatProvider.trim().toLowerCase());
-            
-            let totalUnread = 0;
-            if (isProviderSelf) {
-                totalUnread = Object.keys(providerNotifications).length;
-            } else {
-                totalUnread = Object.keys(customerNotifications).length;
-            }
-
+            let totalUnread = Object.keys(privateNotifications).length;
             const badge = document.getElementById('notifBadge');
             if (badge) {
                 if (totalUnread > 0) {
@@ -495,28 +487,25 @@
 
         window.openNotificationModal = function() {
             const currentUser = (loggedInProviderName || "").trim().toLowerCase();
-            const isProviderSelf = currentUser && currentChatProvider && (currentUser === currentChatProvider.trim().toLowerCase());
-            
-            document.getElementById('notifModeLabel').innerText = isProviderSelf ? `Provider: ${loggedInProviderName}` : "Customer";
-            renderNotificationsList(isProviderSelf);
+            document.getElementById('notifModeLabel').innerText = `Private Secure Inbox`;
+            renderPrivateNotificationsList();
             document.getElementById('notificationModal').classList.remove('hidden');
         };
 
-        function renderNotificationsList(isProvider) {
+        function renderPrivateNotificationsList() {
             const listContainer = document.getElementById('notificationList');
             if (!listContainer) return;
 
-            let activeObj = isProvider ? providerNotifications : customerNotifications;
-            let notifsArray = Object.entries(activeObj).map(([id, val]) => ({ id, ...val })).sort((a, b) => b.timestamp - a.timestamp);
+            let notifsArray = Object.entries(privateNotifications).map(([id, val]) => ({ id, ...val })).sort((a, b) => b.timestamp - a.timestamp);
 
             if (notifsArray.length === 0) {
-                listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-6">No incoming alerts found.</p>`;
+                listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-6">No private alerts found.</p>`;
             } else {
                 listContainer.innerHTML = notifsArray.map(n => `
-                    <div onclick="handleNotificationClick('${n.chatId || ''}', '${n.providerName || loggedInProviderName}')" class="bg-amber-50 border border-amber-200 hover:bg-amber-100 rounded-xl p-3 flex flex-col space-y-1 shadow-sm cursor-pointer transition">
+                    <div onclick="handleNotificationClick('${n.chatId || ''}', '${n.providerName || loggedInProviderName}')" class="bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-xl p-3 flex flex-col space-y-1 shadow-sm cursor-pointer transition">
                         <p class="text-slate-900 font-bold text-xs flex items-center justify-between">
-                            <span><i class="fa-solid fa-bell text-amber-600 mr-1"></i> ${n.text}</span>
-                            <i class="fa-solid fa-chevron-right text-[10px] text-amber-700"></i>
+                            <span><i class="fa-solid fa-lock text-emerald-600 mr-1"></i> ${n.text}</span>
+                            <i class="fa-solid fa-chevron-right text-[10px] text-emerald-700"></i>
                         </p>
                         <span class="text-[10px] text-slate-500">${n.time}</span>
                     </div>
@@ -538,23 +527,17 @@
         window.clearNotifications = function() {
             if (!db) return;
             const currentUser = (loggedInProviderName || "").trim().toLowerCase();
-            const isProviderSelf = currentUser && currentChatProvider && (currentUser === currentChatProvider.trim().toLowerCase());
+            const isProvider = loggedInProviderName.length > 0;
+            const privatePath = isProvider ? 
+                `private_notifs/provider_${loggedInProviderName.replace(/\s+/g, '_').toLowerCase()}` : 
+                `private_notifs/customer_${clientDeviceUuid}`;
 
-            if (isProviderSelf) {
-                const cleanKey = loggedInProviderName.replace(/\s+/g, '_').toLowerCase();
-                set(ref(db, 'notifications_provider/' + cleanKey), null).then(() => {
-                    providerNotifications = {};
-                    renderNotificationsList(true);
-                    updateNotifBadge();
-                });
-            } else {
-                set(ref(db, 'notifications_customer/' + customerDeviceId), null).then(() => {
-                    customerNotifications = {};
-                    renderNotificationsList(false);
-                    updateNotifBadge();
-                });
-            }
-            alert("All alerts cleared successfully!");
+            set(ref(db, privatePath), null).then(() => {
+                privateNotifications = {};
+                renderPrivateNotificationsList();
+                updateNotifBadge();
+                alert("Private alerts cleared successfully!");
+            });
         };
 
         window.previewImage = function(event) {
@@ -819,6 +802,7 @@
                 closePostModal();
                 loggedInProviderName = providerName;
                 localStorage.setItem('nf_logged_provider', providerName);
+                setupPrivateListener();
                 alert("Listing successfully saved!");
             } catch(err) {
                 alert("Error saving listing.");
@@ -862,7 +846,8 @@
                     activeChatSession = Math.random().toString(36).substring(2, 8);
                     localStorage.setItem('nf_active_chat_session', activeChatSession);
                 }
-                currentChatId = targetChatId || `chat_${providerKey}_${customerDeviceId}_${activeChatSession}`;
+                // Chat ID ထဲမှာ Customer ၏ clientDeviceUuid ကို ထည့်သွင်းပေးခြင်းဖြင့် Private ဖြစ်စေသည်
+                currentChatId = targetChatId || `chat_${providerKey}_${clientDeviceUuid}_${activeChatSession}`;
                 loadChatMessages(currentChatId);
             }
 
@@ -902,7 +887,7 @@
                     matchingThreads.forEach((th, idx) => {
                         const opt = document.createElement('option');
                         opt.value = th;
-                        opt.innerText = `Thread #${matchingThreads.length - idx} (${th.split('_').pop()})`;
+                        opt.innerText = `Customer Thread #${matchingThreads.length - idx}`;
                         selectEl.appendChild(opt);
                     });
 
@@ -947,10 +932,17 @@
             });
 
             input.value = '';
+
+            // Extract customer UUID from currentChatId (format: chat_provider_customerUuid_session)
+            const parts = currentChatId.split('_');
+            const customerUuid = parts.length >= 3 ? parts[2] : clientDeviceUuid;
+
             if (senderType === 'user') {
-                notifyProvider(currentChatProvider, `💬 New message from customer`, currentChatId);
+                // Private notification to Provider only
+                sendPrivateNotification('provider', currentChatProvider, `💬 New message from customer`, currentChatId, currentChatProvider);
             } else {
-                notifyCustomer(`💬 New message from ${currentChatProvider}`, currentChatId, currentChatProvider);
+                // Private notification to Customer device only
+                sendPrivateNotification('customer', customerUuid, `💬 New message from ${currentChatProvider}`, currentChatId, currentChatProvider);
             }
         };
 
@@ -989,7 +981,8 @@
             document.getElementById('bookingNoteInput').value = '';
             document.getElementById('bookingDrawer').classList.add('hidden');
             
-            notifyProvider(currentChatProvider, `📅 New Job Request for ${dateVal}!`, currentChatId);
+            // Send Private Notification exclusively to Provider
+            sendPrivateNotification('provider', currentChatProvider, `📅 New Job Request for ${dateVal}!`, currentChatId, currentChatProvider);
             alert("Booking request sent successfully!");
         };
 
@@ -1061,8 +1054,12 @@
                     acceptedAt: Date.now() 
                 });
                 
-                // Customer ဘက်သို့ Notification ပေးပို့ခြင်း
-                notifyCustomer(`✅ Booking Accepted by ${currentChatProvider}! Contact & Address unlocked.`, currentChatId, currentChatProvider);
+                // Extract customer UUID to notify strictly that customer
+                const parts = currentChatId.split('_');
+                const customerUuid = parts.length >= 3 ? parts[2] : clientDeviceUuid;
+
+                // Send Private Notification exclusively to Customer device
+                sendPrivateNotification('customer', customerUuid, `✅ Booking Accepted by ${currentChatProvider}! Contact unlocked.`, currentChatId, currentChatProvider);
             }
 
             btn.disabled = false;
@@ -1074,7 +1071,10 @@
         window.cancelBookingRequest = function(msgKey) {
             if (db && currentChatId && confirm("Decline this booking?")) {
                 update(ref(db, `chats/${currentChatId}/${msgKey}`), { status: 'cancelled' });
-                notifyCustomer(`❌ Booking Declined by ${currentChatProvider}`, currentChatId, currentChatProvider);
+                
+                const parts = currentChatId.split('_');
+                const customerUuid = parts.length >= 3 ? parts[2] : clientDeviceUuid;
+                sendPrivateNotification('customer', customerUuid, `❌ Booking Declined by ${currentChatProvider}`, currentChatId, currentChatProvider);
             }
         };
 
@@ -1240,7 +1240,7 @@
                 gps_ready: "GPS तैयार है", refresh_gps: "रीफ्रेश GPS", powered_by: "द्वारा संचालित", card_lock_notice: "संपर्क और पता लॉक है", edit_profile: "प्रोफ़ाइल संपादित करें",
                 form_main_title: "अपनी सेवा सूची पोस्ट करें", form_name: "नाम / व्यवसाय का नाम", form_name_placeholder: "उदा. Rising Star Music Studio", form_pin: "पिन कोड", form_pin_placeholder: "पिन दर्ज करें", form_pin_desc: "इस पिन को सहेजें!", form_photo: "प्रोफाइल फोटो अपलोड करें", form_select_photo: "फोटो चुनें", form_category: "श्रेणी", form_location: "शहर, राज्य / देश", form_title: "सेवा शीर्षक", form_rate: "दर", form_rate_placeholder: "दर के लिए संपर्क करें", form_phone: "फ़ोन / व्हाट्सएप", form_gps: "GPS लोकेशन पिन", form_gps_btn: "वर्तमान जीपीएस स्थान का उपयोग करें", form_desc: "संक्षिप्त विवरण", form_publish: "सूची प्रकाशित करें",
                 pin_modal_title: "पिन दर्ज करें", pin_modal_desc: "संपादन के लिए पिन दर्ज करें။", pin_modal_placeholder: "पिन", btn_cancel: "रद्द करें", btn_verify: "सत्यापित करें और संपादित करें",
-                map_modal_title: "प्रदाता का स्थान", get_direction: "गूगल मैप्स में दिशा-निर्देश प्राप्त करें",
+                map_modal_title: "প্রदाता کا स्थान", get_direction: "गूगल मैप्स में दिशा-निर्देश प्राप्त करें",
                 chat_modal_title: "चैट और पूछताछ", customer_thread: "ग्राहक धागा:", booking_drawer_title: "बुकिंग विवरण चुनें", booking_date: "दिनांक", booking_time: "समय", booking_phone: "फ़ोन नंबर", booking_phone_placeholder: "उदा. +1...", booking_address: "पता", booking_address_placeholder: "पता दर्ज करें", booking_note: "नोट", booking_note_placeholder: "विवरण...", submit_booking: "बुकिंग अनुरोध सबमिट करें", chat_input_placeholder: "संदेश टाइप करें...", request_booking_btn: "सेवा बुकिंग का अनुरोध करें",
                 fee_modal_title: "पुष्टि करें और भुगतान करें", fee_modal_desc: "शुल्क आवश्यक है။", btn_confirm_accept: "पुष्टि करें और स्वीकार करें", alerts_title: "अलर्ट और सूचनाएं"
             }
@@ -1250,7 +1250,7 @@
             currentLang = translations[lang] ? lang : 'en';
             localStorage.setItem('nf_app_lang', currentLang);
             
-            const langSelect = document.getElementById('langSwitch');
+            .langSelect = document.getElementById('langSwitch');
             if (langSelect && langSelect.value !== currentLang) {
                 langSelect.value = currentLang;
             }
