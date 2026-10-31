@@ -258,7 +258,13 @@
         <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-4 shadow-2xl flex flex-col max-h-[85vh]">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-3">
                 <h3 id="chatTitle" class="font-bold text-slate-900 text-base" data-i18n="chat_modal_title">Chat & Inquire</h3>
-                <button onclick="closeChat()" class="text-slate-400 hover:text-slate-600 text-lg px-2 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+                <div class="flex items-center space-x-2">
+                    <button onclick="startFreshNewChat()" class="bg-amber-100 hover:bg-amber-200 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-lg flex items-center space-x-1 cursor-pointer" title="Start a fresh new chat session">
+                        <i class="fa-solid fa-rotate"></i>
+                        <span>New Chat</span>
+                    </button>
+                    <button onclick="closeChat()" class="text-slate-400 hover:text-slate-600 text-lg px-1 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+                </div>
             </div>
 
             <!-- Provider Thread Switcher (Visible only to the Provider) -->
@@ -853,11 +859,25 @@
             } else {
                 threadContainer.classList.add('hidden');
                 bookingDrawerToggleBtn.classList.remove('hidden');
-                currentChatId = `chat_${providerKey}_${deviceSessionId}`;
+                
+                // Use a dynamic session identifier suffix to ensure a clean thread
+                let activeChatSession = localStorage.getItem('nf_active_chat_session');
+                if (!activeChatSession) {
+                    activeChatSession = Math.random().toString(36).substring(2, 8);
+                    localStorage.setItem('nf_active_chat_session', activeChatSession);
+                }
+                currentChatId = `chat_${providerKey}_${deviceSessionId}_${activeChatSession}`;
                 loadChatMessages(currentChatId);
             }
 
             document.getElementById('chatModal').classList.remove('hidden');
+        };
+
+        window.startFreshNewChat = function() {
+            const newSession = Math.random().toString(36).substring(2, 8);
+            localStorage.setItem('nf_active_chat_session', newSession);
+            openChat(currentChatProvider);
+            alert("Started a fresh new chat session!");
         };
 
         function loadProviderActiveThreads(providerKey) {
@@ -881,10 +901,9 @@
                     loadChatMessages(currentChatId);
                 } else {
                     matchingThreads.forEach((th, idx) => {
-                        const custId = th.split('_').pop();
                         const opt = document.createElement('option');
                         opt.value = th;
-                        opt.innerText = `Customer #${idx + 1} (${custId.substring(0, 5)})`;
+                        opt.innerText = `Thread #${idx + 1}`;
                         selectEl.appendChild(opt);
                     });
                     currentChatId = matchingThreads[0];
@@ -926,7 +945,7 @@
             if (senderType === 'user') {
                 addCloudNotification(currentChatProvider, `💬 New message from customer: "${text}"`, currentChatId);
             } else {
-                const custId = currentChatId.split('_').pop();
+                const custId = currentChatId.split('_')[2] || deviceSessionId;
                 addCustomerNotification(custId, `💬 New message from ${currentChatProvider}`, currentChatId, currentChatProvider);
             }
         };
@@ -945,7 +964,6 @@
 
             if (!db || !currentChatId) return;
 
-            // Generate a fresh unique push key for the new request so it doesn't conflict with old cancelled ones
             const newMsgRef = push(ref(db, 'chats/' + currentChatId));
             set(newMsgRef, {
                 sender: 'user',
@@ -1039,7 +1057,7 @@
                 });
                 addCloudNotification(currentChatProvider, `Booking confirmed and lead unlocked!`, currentChatId);
 
-                const custId = currentChatId.split('_').pop();
+                const custId = currentChatId.split('_')[2] || deviceSessionId;
                 addCustomerNotification(custId, `✅ Your booking request has been accepted by ${currentChatProvider}! Contact & Address unlocked for 2 hours.`, currentChatId, currentChatProvider);
             }
 
@@ -1218,7 +1236,7 @@
                 form_main_title: "अपनी सेवा सूची पोस्ट करें", form_name: "नाम / व्यवसाय का नाम", form_name_placeholder: "उदा. Rising Star Music Studio", form_pin: "पिन कोड", form_pin_placeholder: "पिन दर्ज करें", form_pin_desc: "इस पिन को सहेजें!", form_photo: "प्रोफाइल फोटो अपलोड करें", form_select_photo: "फोटो चुनें", form_category: "श्रेणी", form_location: "शहर, राज्य / देश", form_title: "सेवा शीर्षक", form_rate: "दर", form_rate_placeholder: "दर के लिए संपर्क करें", form_phone: "फ़ोन / व्हाट्सएप", form_gps: "GPS लोकेशन पिन", form_gps_btn: "वर्तमान जीपीएस स्थान का उपयोग करें", form_desc: "संक्षिप्त विवरण", form_publish: "सूची प्रकाशित करें",
                 pin_modal_title: "पिन दर्ज करें", pin_modal_desc: "संपादन के लिए पिन दर्ज करें।", pin_modal_placeholder: "पिन", btn_cancel: "रद्द करें", btn_verify: "सत्यापित करें और संपादित करें",
                 map_modal_title: "प्रदाता का स्थान", get_direction: "गूगल मैप्स में दिशा-निर्देश प्राप्त करें",
-                chat_modal_title: "चैट और पूछताछ", customer_thread: "ग्राहक धागा:", booking_drawer_title: "बुकिंग विवरण चुनें", booking_date: "दिनांक", booking_time: "समय", booking_phone: "फ़ोन नंबर", booking_phone_placeholder: "उदा. +1...", booking_address: "पता", booking_address_placeholder: "पता दर्ज करें", booking_note: "नोट", booking_note_placeholder: "विवरण...", submit_booking: "बुकिंग अनुरोध सबमिट करें", chat_input_placeholder: "संदेश टाइप करें...", request_booking_btn: "सेवा बुकिंग का अनुरोध करें",
+                chat_modal_title: "चैट और पूछताछ", customer_thread: "ग्राहक धाག་:", booking_drawer_title: "बुकिंग विवरण चुनें", booking_date: "दिनांक", booking_time: "समय", booking_phone: "फ़ोन नंबर", booking_phone_placeholder: "उदा. +1...", booking_address: "पता", booking_address_placeholder: "पता दर्ज करें", booking_note: "नोट", booking_note_placeholder: "विवरण...", submit_booking: "बुकिंग अनुरोध सबमिट करें", chat_input_placeholder: "संदेश टाइप करें...", request_booking_btn: "सेवा बुकिंग का अनुरोध करें",
                 fee_modal_title: "पुष्टि करें और भुगतान करें", fee_modal_desc: "शुल्क आवश्यक है।", btn_confirm_accept: "पुष्टि करें और स्वीकार करें", alerts_title: "अलर्ट और सूचनाएं"
             }
         };
