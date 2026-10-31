@@ -1059,8 +1059,9 @@
                 });
                 addCloudNotification(currentChatProvider, `Booking confirmed and lead unlocked!`, currentChatId);
 
+                // Customer ဘက်သို့ အသိပေးချက် (Notification) ပေးပို့ခြင်း
                 const custId = currentChatId.split('_')[2] || deviceSessionId;
-                addCustomerNotification(custId, `✅ Your booking request has been accepted by ${currentChatProvider}! Contact & Address unlocked for 2 hours.`, currentChatId, currentChatProvider);
+                addCustomerNotification(custId, `✅ Your booking request has been accepted by ${currentChatProvider}!`, currentChatId, currentChatProvider);
             }
 
             btn.disabled = false;
